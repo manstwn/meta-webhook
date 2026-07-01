@@ -14,8 +14,10 @@ const app = express();
 // Trust proxy (required for rate limiting behind Cloudflare Tunnel)
 app.set('trust proxy', 1);
 
-// Apply security headers
-app.use(helmet());
+// Apply security headers (disable Content Security Policy to allow inline dashboard script and Google Fonts)
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
 
 // Enable Cross-Origin Resource Sharing
 app.use(cors());
