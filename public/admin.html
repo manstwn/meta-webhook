@@ -508,9 +508,13 @@
     /* Login Lock Screen */
     .login-overlay {
       position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       inset: 0;
       background: var(--bg-gradient);
-      z-index: 1000;
+      z-index: 2000;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -777,6 +781,31 @@
   <script>
     let messages = [];
 
+    // Safe session storage fallback for strict/incognito browsers
+    const sessionStore = {
+      getItem(key) {
+        try {
+          return sessionStorage.getItem(key);
+        } catch (e) {
+          return this[key] || null;
+        }
+      },
+      setItem(key, val) {
+        try {
+          sessionStorage.setItem(key, val);
+        } catch (e) {
+          this[key] = val;
+        }
+      },
+      removeItem(key) {
+        try {
+          sessionStorage.removeItem(key);
+        } catch (e) {
+          delete this[key];
+        }
+      }
+    };
+
     // Load messages on startup
     document.addEventListener('DOMContentLoaded', () => {
       checkAuthAndFetch();
@@ -787,15 +816,19 @@
     });
 
     function getAuthHeader() {
-      const pin = sessionStorage.getItem('admin_pin');
+      const pin = sessionStore.getItem('admin_pin');
       return pin ? { 'Authorization': `Bearer ${pin}` } : {};
     }
 
     function checkAuthAndFetch() {
-      const pin = sessionStorage.getItem('admin_pin');
+      const pin = sessionStore.getItem('admin_pin');
       if (!pin) {
         document.getElementById('loginOverlay').classList.add('active');
-        document.getElementById('loginPinInput').focus();
+        setTimeout(() => {
+          try {
+            document.getElementById('loginPinInput').focus();
+          } catch (e) {}
+        }, 50);
       } else {
         fetchMessages();
       }
@@ -804,23 +837,27 @@
     async function handleLogin(e) {
       e.preventDefault();
       const pin = document.getElementById('loginPinInput').value;
-      sessionStorage.setItem('admin_pin', pin);
+      sessionStore.setItem('admin_pin', pin);
       document.getElementById('loginOverlay').classList.remove('active');
       document.getElementById('loginPinInput').value = '';
       await fetchMessages();
     }
 
     function handleLogout() {
-      sessionStorage.removeItem('admin_pin');
+      sessionStore.removeItem('admin_pin');
       showToast('Logged out successfully', 'success');
       checkAuthAndFetch();
     }
 
     async function handleResponse(response) {
       if (response.status === 401) {
-        sessionStorage.removeItem('admin_pin');
+        sessionStore.removeItem('admin_pin');
         document.getElementById('loginOverlay').classList.add('active');
-        document.getElementById('loginPinInput').focus();
+        setTimeout(() => {
+          try {
+            document.getElementById('loginPinInput').focus();
+          } catch (e) {}
+        }, 50);
         showToast('Access denied: Invalid PIN', 'danger');
         throw new Error('Unauthorized');
       }
