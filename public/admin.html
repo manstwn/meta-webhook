@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Webhook Portal | Admin Dashboard</title>
+  <!-- Google Fonts Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #020617 100%);
+      --glass-bg: rgba(30, 41, 59, 0.45);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-primary: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-success: #10b981;
+      --accent-danger: #ef4444;
+      --accent-warning: #f59e0b;
+      --card-radius: 16px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 2rem 1rem;
+    }
+
+    /* Background decorative blobs */
+    .blob {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+      top: -100px;
+      left: -100px;
+      z-index: -1;
+      filter: blur(40px);
+    }
+    .blob-right {
+      position: absolute;
+      width: 450px;
+      height: 450px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+      bottom: -100px;
+      right: -100px;
+      z-index: -1;
+      filter: blur(50px);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    /* Glass Header Card */
+    header {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--card-radius);
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      background: var(--accent-primary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px 2px rgba(99, 102, 241, 0.4);
+    }
+
+    .brand-logo svg {
+      width: 22px;
+      height: 22px;
+      fill: #fff;
+    }
+
+    .brand-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(to right, #fff, #c7d2fe);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent-success);
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 0.25rem 0.6rem;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent-success);
+      border-radius: 50%;
+      box-shadow: 0 0 8px 2px var(--accent-success);
+    }
+
+    /* Actions Panel */
+    .controls-panel {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--card-radius);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .search-filter-group {
+      display: flex;
+      gap: 0.75rem;
+      flex-grow: 1;
+      max-width: 600px;
+    }
+
+    .input-control {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      color: var(--text-main);
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .input-control:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+
+    .search-input {
+      flex-grow: 1;
+    }
+
+    .btn {
+      background: var(--accent-primary);
+      color: #fff;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: var(--transition);
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid var(--glass-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-danger {
+      background: var(--accent-danger);
+    }
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+
+    /* Grid layout */
+    .table-container {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--card-radius);
+      overflow: hidden;
+      box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.25);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(15, 23, 42, 0.2);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .phone-col {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .text-body-col {
+      max-width: 300px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #e2e8f0;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-received {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-success);
+    }
+
+    .badge-sent {
+      background: rgba(99, 102, 241, 0.15);
+      color: #818cf8;
+    }
+
+    .badge-replied {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-warning);
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .btn-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid var(--glass-border);
+      background: rgba(255, 255, 255, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: var(--transition);
+    }
+
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      border-color: var(--text-muted);
+    }
+
+    .btn-icon-delete:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--accent-danger);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-icon svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    /* Modal Overlay & Card */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: #1e1b4b;
+      background-image: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--card-radius);
+      width: 100%;
+      max-width: 550px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      transform: scale(0.95);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal-overlay.active .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .btn-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.5rem;
+      line-height: 1;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+    }
+
+    .modal-footer {
+      padding: 1.25rem 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .form-control {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      color: var(--text-main);
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      outline: none;
+      width: 100%;
+      transition: var(--transition);
+    }
+
+    .form-control:focus {
+      border-color: var(--accent-primary);
+    }
+
+    textarea.form-control {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    /* JSON display */
+    .json-display {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      max-height: 300px;
+      color: #6ee7b7;
+      white-space: pre-wrap;
+    }
+
+    /* Empty state */
+    .empty-state {
+      padding: 4rem 2rem;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .empty-state svg {
+      width: 60px;
+      height: 60px;
+      margin-bottom: 1rem;
+      color: var(--text-muted);
+      opacity: 0.4;
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .toast {
+      background: rgba(30, 41, 59, 0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--glass-border);
+      border-left: 4px solid var(--accent-primary);
+      color: var(--text-main);
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 300px;
+      transform: translateY(100px);
+      opacity: 0;
+      animation: slideIn 0.3s forwards cubic-bezier(0.16, 1, 0.3, 1);
+      transition: var(--transition);
+    }
+
+    @keyframes slideIn {
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .toast-success {
+      border-left-color: var(--accent-success);
+    }
+
+    .toast-danger {
+      border-left-color: var(--accent-danger);
+    }
+
+    /* Login Lock Screen */
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-gradient);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .login-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .login-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--card-radius);
+      width: 100%;
+      max-width: 400px;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      transform: scale(0.95);
+      transition: var(--transition);
+    }
+
+    .login-overlay.active .login-card {
+      transform: scale(1);
+    }
+
+    .lock-icon-container {
+      width: 64px;
+      height: 64px;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      color: var(--accent-primary);
+    }
+
+    .lock-icon-container svg {
+      width: 32px;
+      height: 32px;
+      fill: currentColor;
+    }
+
+    .login-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(to right, #fff, #c7d2fe);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .login-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+    }
+
+    .pin-input {
+      letter-spacing: 0.5rem;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      max-width: 240px;
+      margin: 0 auto 1.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="blob"></div>
+  <div class="blob-right"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="brand-section">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.457L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.625 1.451 5.536.002 10.048-4.509 10.051-10.052.002-2.686-1.04-5.212-2.937-7.11C16.486 1.545 13.966.502 11.282.502c-5.54 0-10.051 4.512-10.054 10.056-.001 1.83.49 3.568 1.42 5.127l-.93 3.398 3.48-.913z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">WhatsApp Webhook Portal</h1>
+          <p style="font-size: 0.8rem; color: var(--text-muted)">Webhook Receiver Database Admin</p>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="brand-badge">
+          <span class="status-dot"></span>
+          API Online
+        </div>
+        <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 6px;" onclick="handleLogout()">
+          Logout
+        </button>
+      </div>
+    </header>
+
+    <!-- Controls Panel -->
+    <section class="controls-panel">
+      <div class="search-filter-group">
+        <input type="text" id="searchInput" class="input-control search-input" placeholder="Search by WA ID or message content...">
+        <select id="statusFilter" class="input-control">
+          <option value="all">All Statuses</option>
+          <option value="received">Received</option>
+          <option value="sent">Sent</option>
+          <option value="replied">Replied</option>
+        </select>
+      </div>
+      <button class="btn" onclick="openCreateModal()">
+        <svg style="width:16px; height:16px; fill:currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        Create Message
+      </button>
+    </section>
+
+    <!-- Table Container -->
+    <main class="table-container">
+      <table id="messagesTable">
+        <thead>
+          <tr>
+            <th>WhatsApp ID</th>
+            <th>Message Body</th>
+            <th>Timestamp</th>
+            <th>Status</th>
+            <th>Replies</th>
+            <th>Notes</th>
+            <th style="width: 120px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="messagesTableBody">
+          <!-- Dynamically populated -->
+        </tbody>
+      </table>
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="8" y1="12" x2="16" y2="12"></line>
+        </svg>
+        <p>No messages found in the JSON store.</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create Modal -->
+  <div id="createModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Create Message Record</h3>
+        <button class="btn-close" onclick="closeModal('createModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="createForm" onsubmit="handleCreate(event)">
+          <div class="form-group">
+            <label for="createFrom">WhatsApp ID / Phone</label>
+            <input type="text" id="createFrom" class="form-control" placeholder="e.g. 628123456789" required>
+          </div>
+          <div class="form-group">
+            <label for="createBody">Message Content</label>
+            <textarea id="createBody" class="form-control" placeholder="e.g. hi" required></textarea>
+          </div>
+          <div class="form-group">
+            <label for="createStatus">Status</label>
+            <select id="createStatus" class="form-control">
+              <option value="received">Received</option>
+              <option value="sent">Sent</option>
+              <option value="replied">Replied</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="createNotes">Private Notes</label>
+            <input type="text" id="createNotes" class="form-control" placeholder="Optional notes...">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('createModal')">Cancel</button>
+        <button type="submit" form="createForm" class="btn">Save Message</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="editModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Edit Message Record</h3>
+        <button class="btn-close" onclick="closeModal('editModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="editForm" onsubmit="handleUpdate(event)">
+          <input type="hidden" id="editId">
+          <div class="form-group">
+            <label for="editFrom">WhatsApp ID / Phone</label>
+            <input type="text" id="editFrom" class="form-control" readonly style="opacity: 0.6; cursor: not-allowed;">
+          </div>
+          <div class="form-group">
+            <label for="editBody">Message Content</label>
+            <textarea id="editBody" class="form-control" required></textarea>
+          </div>
+          <div class="form-group">
+            <label for="editStatus">Status</label>
+            <select id="editStatus" class="form-control">
+              <option value="received">Received</option>
+              <option value="sent">Sent</option>
+              <option value="replied">Replied</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editNotes">Private Notes</label>
+            <input type="text" id="editNotes" class="form-control" placeholder="Update notes...">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('editModal')">Cancel</button>
+        <button type="submit" form="editForm" class="btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Modal -->
+  <div id="viewModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Raw Message Payload</h3>
+        <button class="btn-close" onclick="closeModal('viewModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <pre id="jsonPayloadDisplay" class="json-display"></pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('viewModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Overlay -->
+  <div id="loginOverlay" class="login-overlay">
+    <div class="login-card">
+      <div class="lock-icon-container">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2c3.31 0 6 2.69 6 6v4h1c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-8c0-1.1.9-2 2-2h1V8c0-3.31 2.69-6 6-6zm0 2c-2.21 0-4 1.79-4 4v4h8V8c0-2.21-1.79-4-4-4zm0 11c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+        </svg>
+      </div>
+      <h2 class="login-title">Dashboard Locked</h2>
+      <p class="login-subtitle">Please enter your configured Admin PIN to access the portal</p>
+      <form onsubmit="handleLogin(event)">
+        <input type="password" id="loginPinInput" class="form-control pin-input" maxlength="8" placeholder="••••••" required autocomplete="current-password">
+        <button type="submit" class="btn" style="width: 100%">Unlock Dashboard</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script>
+    let messages = [];
+
+    // Load messages on startup
+    document.addEventListener('DOMContentLoaded', () => {
+      checkAuthAndFetch();
+
+      // Search & Filter event listeners
+      document.getElementById('searchInput').addEventListener('input', applyFilters);
+      document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    });
+
+    function getAuthHeader() {
+      const pin = sessionStorage.getItem('admin_pin');
+      return pin ? { 'Authorization': `Bearer ${pin}` } : {};
+    }
+
+    function checkAuthAndFetch() {
+      const pin = sessionStorage.getItem('admin_pin');
+      if (!pin) {
+        document.getElementById('loginOverlay').classList.add('active');
+        document.getElementById('loginPinInput').focus();
+      } else {
+        fetchMessages();
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const pin = document.getElementById('loginPinInput').value;
+      sessionStorage.setItem('admin_pin', pin);
+      document.getElementById('loginOverlay').classList.remove('active');
+      document.getElementById('loginPinInput').value = '';
+      await fetchMessages();
+    }
+
+    function handleLogout() {
+      sessionStorage.removeItem('admin_pin');
+      showToast('Logged out successfully', 'success');
+      checkAuthAndFetch();
+    }
+
+    async function handleResponse(response) {
+      if (response.status === 401) {
+        sessionStorage.removeItem('admin_pin');
+        document.getElementById('loginOverlay').classList.add('active');
+        document.getElementById('loginPinInput').focus();
+        showToast('Access denied: Invalid PIN', 'danger');
+        throw new Error('Unauthorized');
+      }
+      if (!response.ok) {
+        throw new Error('Request failed');
+      }
+      return response;
+    }
+
+    async function fetchMessages() {
+      try {
+        const response = await fetch('/api/messages', {
+          headers: { ...getAuthHeader() }
+        });
+        await handleResponse(response);
+        messages = await response.json();
+        renderTable(messages);
+      } catch (err) {
+        if (err.message !== 'Unauthorized') {
+          showToast('Error loading messages database', 'danger');
+        }
+        console.error(err);
+      }
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById('messagesTableBody');
+      const emptyState = document.getElementById('emptyState');
+      tbody.innerHTML = '';
+
+      if (data.length === 0) {
+        emptyState.style.display = 'block';
+        return;
+      }
+      
+      emptyState.style.display = 'none';
+
+      data.forEach(msg => {
+        const tr = document.createElement('tr');
+        
+        // Format timestamp
+        const dateStr = new Date(msg.createdAt || (msg.timestamp * 1000)).toLocaleString();
+
+        tr.innerHTML = `
+          <td class="phone-col">${escapeHtml(msg.from)}</td>
+          <td><div class="text-body-col" title="${escapeHtml(msg.body)}">${escapeHtml(msg.body)}</div></td>
+          <td style="font-size:0.85rem; color:var(--text-muted)">${dateStr}</td>
+          <td><span class="badge badge-${msg.status}">${msg.status}</span></td>
+          <td>
+            <span style="color: ${msg.replied ? 'var(--accent-success)' : 'var(--text-muted)'}; font-size: 0.85rem">
+              ${msg.replied ? '✓ Yes' : '—'}
+            </span>
+          </td>
+          <td style="font-size:0.85rem; color:var(--text-muted)">${escapeHtml(msg.notes || '—')}</td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-icon" title="View Payload" onclick="viewPayload('${msg.id}')">
+                <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+              </button>
+              <button class="btn-icon" title="Edit Message" onclick="openEditModal('${msg.id}')">
+                <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+              </button>
+              <button class="btn-icon btn-icon-delete" title="Delete Message" onclick="handleDelete('${msg.id}')">
+                <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function applyFilters() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const status = document.getElementById('statusFilter').value;
+
+      const filtered = messages.filter(msg => {
+        const matchesSearch = msg.from.toLowerCase().includes(search) || msg.body.toLowerCase().includes(search);
+        const matchesStatus = status === 'all' || msg.status === status;
+        return matchesSearch && matchesStatus;
+      });
+
+      renderTable(filtered);
+    }
+
+    // Modal Control
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function openCreateModal() {
+      document.getElementById('createForm').reset();
+      openModal('createModal');
+    }
+
+    function openEditModal(id) {
+      const msg = messages.find(m => m.id === id);
+      if (!msg) return;
+
+      document.getElementById('editId').value = msg.id;
+      document.getElementById('editFrom').value = msg.from;
+      document.getElementById('editBody').value = msg.body;
+      document.getElementById('editStatus').value = msg.status;
+      document.getElementById('editNotes').value = msg.notes || '';
+
+      openModal('editModal');
+    }
+
+    function viewPayload(id) {
+      const msg = messages.find(m => m.id === id);
+      if (!msg) return;
+
+      document.getElementById('jsonPayloadDisplay').textContent = JSON.stringify(msg, null, 2);
+      openModal('viewModal');
+    }
+
+    // CRUD Handlers
+    async function handleCreate(e) {
+      e.preventDefault();
+      
+      const payload = {
+        from: document.getElementById('createFrom').value,
+        body: document.getElementById('createBody').value,
+        status: document.getElementById('createStatus').value,
+        notes: document.getElementById('createNotes').value
+      };
+
+      try {
+        const response = await fetch('/api/messages', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            ...getAuthHeader()
+          },
+          body: JSON.stringify(payload)
+        });
+
+        await handleResponse(response);
+
+        showToast('Message record created successfully', 'success');
+        closeModal('createModal');
+        fetchMessages();
+      } catch (err) {
+        showToast('Failed to create message record', 'danger');
+        console.error(err);
+      }
+    }
+
+    async function handleUpdate(e) {
+      e.preventDefault();
+      
+      const id = document.getElementById('editId').value;
+      const payload = {
+        body: document.getElementById('editBody').value,
+        status: document.getElementById('editStatus').value,
+        notes: document.getElementById('editNotes').value
+      };
+
+      try {
+        const response = await fetch(`/api/messages/${id}`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            ...getAuthHeader()
+          },
+          body: JSON.stringify(payload)
+        });
+
+        await handleResponse(response);
+
+        showToast('Message details updated successfully', 'success');
+        closeModal('editModal');
+        fetchMessages();
+      } catch (err) {
+        showToast('Failed to update message details', 'danger');
+        console.error(err);
+      }
+    }
+
+    async function handleDelete(id) {
+      if (!confirm('Are you sure you want to delete this message record?')) return;
+
+      try {
+        const response = await fetch(`/api/messages/${id}`, {
+          method: 'DELETE',
+          headers: { ...getAuthHeader() }
+        });
+
+        await handleResponse(response);
+
+        showToast('Message deleted successfully', 'success');
+        fetchMessages();
+      } catch (err) {
+        showToast('Failed to delete message record', 'danger');
+        console.error(err);
+      }
+    }
+
+    // Toasts helper
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.textContent = message;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text
+        .toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
