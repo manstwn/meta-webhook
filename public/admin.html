@@ -808,11 +808,26 @@
 
     // Load messages on startup
     function init() {
-      checkAuthAndFetch();
+      try {
+        checkAuthAndFetch();
 
-      // Search & Filter event listeners
-      document.getElementById('searchInput').addEventListener('input', applyFilters);
-      document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        // Search & Filter event listeners with defensive checks
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+          searchInput.addEventListener('input', applyFilters);
+        } else {
+          console.warn('searchInput element not found in DOM');
+        }
+
+        const statusFilter = document.getElementById('statusFilter');
+        if (statusFilter) {
+          statusFilter.addEventListener('change', applyFilters);
+        } else {
+          console.warn('statusFilter element not found in DOM');
+        }
+      } catch (err) {
+        console.error('Fatal initialization error:', err);
+      }
     }
 
     if (document.readyState === 'loading') {
@@ -822,46 +837,79 @@
     }
 
     function getAuthHeader() {
-      const pin = sessionStore.getItem('admin_pin');
-      return pin ? { 'Authorization': `Bearer ${pin}` } : {};
+      try {
+        const pin = sessionStore.getItem('admin_pin');
+        return pin ? { 'Authorization': `Bearer ${pin}` } : {};
+      } catch (e) {
+        console.error('Error getting auth header:', e);
+        return {};
+      }
     }
 
     function checkAuthAndFetch() {
-      const pin = sessionStore.getItem('admin_pin');
-      if (!pin) {
-        document.getElementById('loginOverlay').classList.add('active');
-        setTimeout(() => {
-          try {
-            document.getElementById('loginPinInput').focus();
-          } catch (e) {}
-        }, 50);
-      } else {
-        fetchMessages();
+      try {
+        const pin = sessionStore.getItem('admin_pin');
+        if (!pin) {
+          const overlay = document.getElementById('loginOverlay');
+          if (overlay) {
+            overlay.classList.add('active');
+          } else {
+            console.error('loginOverlay element not found in DOM');
+          }
+          
+          setTimeout(() => {
+            try {
+              const input = document.getElementById('loginPinInput');
+              if (input) input.focus();
+            } catch (e) {}
+          }, 50);
+        } else {
+          fetchMessages();
+        }
+      } catch (err) {
+        console.error('Error in checkAuthAndFetch:', err);
       }
     }
 
     async function handleLogin(e) {
       e.preventDefault();
-      const pin = document.getElementById('loginPinInput').value;
-      sessionStore.setItem('admin_pin', pin);
-      document.getElementById('loginOverlay').classList.remove('active');
-      document.getElementById('loginPinInput').value = '';
-      await fetchMessages();
+      try {
+        const pinInput = document.getElementById('loginPinInput');
+        if (!pinInput) throw new Error('loginPinInput not found');
+        const pin = pinInput.value;
+        sessionStore.setItem('admin_pin', pin);
+        
+        const overlay = document.getElementById('loginOverlay');
+        if (overlay) overlay.classList.remove('active');
+        
+        pinInput.value = '';
+        await fetchMessages();
+      } catch (err) {
+        console.error('Error during login handling:', err);
+        showToast('Login failed', 'danger');
+      }
     }
 
     function handleLogout() {
-      sessionStore.removeItem('admin_pin');
-      showToast('Logged out successfully', 'success');
-      checkAuthAndFetch();
+      try {
+        sessionStore.removeItem('admin_pin');
+        showToast('Logged out successfully', 'success');
+        checkAuthAndFetch();
+      } catch (err) {
+        console.error('Error during logout:', err);
+      }
     }
 
     async function handleResponse(response) {
       if (response.status === 401) {
         sessionStore.removeItem('admin_pin');
-        document.getElementById('loginOverlay').classList.add('active');
+        const overlay = document.getElementById('loginOverlay');
+        if (overlay) overlay.classList.add('active');
+        
         setTimeout(() => {
           try {
-            document.getElementById('loginPinInput').focus();
+            const input = document.getElementById('loginPinInput');
+            if (input) input.focus();
           } catch (e) {}
         }, 50);
         showToast('Access denied: Invalid PIN', 'danger');
