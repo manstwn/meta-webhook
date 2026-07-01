@@ -11,6 +11,9 @@ const messageRoutes = require('./routes/messages');
 
 const app = express();
 
+// Trust proxy (required for rate limiting behind Cloudflare Tunnel)
+app.set('trust proxy', 1);
+
 // Apply security headers
 app.use(helmet());
 
