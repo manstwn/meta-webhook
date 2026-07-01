@@ -57,6 +57,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // Serve admin dashboard explicitly on GET /admin
 app.get('/admin', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.sendFile(path.join(__dirname, '../public/admin.html'));
 });
 
