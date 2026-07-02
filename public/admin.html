@@ -1031,6 +1031,24 @@
       }
     }
 
+    function formatRelativeTime(dateInput) {
+      const date = new Date(dateInput);
+      const now = new Date();
+      const seconds = Math.floor((now - date) / 1000);
+      
+      if (seconds < 0) return 'Just now';
+      if (seconds < 60) return `${seconds}s ago`;
+      
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes}m ago`;
+      
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours}h ago`;
+      
+      const days = Math.floor(hours / 24);
+      return `${days}D ago`;
+    }
+
     function renderTable(data) {
       const tbody = document.getElementById('messagesTableBody');
       const emptyState = document.getElementById('emptyState');
@@ -1047,7 +1065,9 @@
         const tr = document.createElement('tr');
         
         // Format timestamp
-        const dateStr = new Date(msg.createdAt || (msg.timestamp * 1000)).toLocaleString();
+        const dateObj = new Date(msg.createdAt || (msg.timestamp * 1000));
+        const dateStr = dateObj.toLocaleString();
+        const relativeAge = formatRelativeTime(dateObj);
 
         let bodyContent = escapeHtml(msg.body);
         if (msg.type === 'image') {
@@ -1112,7 +1132,10 @@
         tr.innerHTML = `
           <td class="phone-col">${escapeHtml(msg.from)}</td>
           <td><div style="max-height: 120px; overflow-y: auto; overflow-x: hidden; color: #e2e8f0;">${bodyContent}</div></td>
-          <td style="font-size:0.85rem; color:var(--text-muted)">${dateStr}</td>
+          <td>
+            <div style="font-weight: 500; color: #e2e8f0;">${relativeAge}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem;">${dateStr}</div>
+          </td>
           <td><span class="badge badge-${msg.status}">${msg.status}</span></td>
           <td>
             <span style="color: ${msg.replied ? 'var(--accent-success)' : 'var(--text-muted)'}; font-size: 0.85rem">
