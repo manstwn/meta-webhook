@@ -1039,7 +1039,7 @@
         } else if (msg.type === 'video') {
           const videoHtml = msg.mediaPath 
             ? `<div style="margin-top: 0.5rem; position: relative; border-radius: 8px; overflow: hidden; width: 80px; height: 80px; border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center; background: #000;">
-                 <video src="${msg.mediaPath}" muted autoplay loop style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" onclick="showMediaPreview('${msg.id}')"></video>
+                 <video src="${msg.mediaPath}" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" onclick="showMediaPreview('${msg.id}')"></video>
                  <div style="position: absolute; pointer-events: none; bottom: 4px; right: 4px; background: rgba(0,0,0,0.6); border-radius: 4px; padding: 2px 4px; font-size: 0.65rem; color: #fff; font-weight: bold; display: flex; align-items: center; gap: 2px;">
                    <svg style="width: 8px; height: 8px; fill: currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> VIDEO
                  </div>
@@ -1163,44 +1163,41 @@
       let mediaDetails = null;
       let mediaHtml = '';
       
+      const propertiesToDisplay = {
+        meta_id: 'N/A',
+        mime_type: 'N/A',
+        sha256: 'N/A',
+        vps_local_path: msg.mediaPath || 'N/A',
+        meta_cdn_url: 'N/A',
+        file_size: 'Fetching...'
+      };
+      
       if (msg.type === 'image') {
         modalTitle.textContent = 'Image Media Viewer';
-        mediaDetails = msg.rawData?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.image || {
-          id: 'Unknown',
-          mime_type: 'image/jpeg'
-        };
-        mediaHtml = `<img src="${msg.mediaPath || '#'}" style="max-width: 100%; max-height: 50vh; border-radius: 8px; object-fit: contain; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);"/>`;
+        mediaDetails = msg.rawData?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.image || {};
+        mediaHtml = `<img id="previewImageEl" src="${msg.mediaPath || '#'}" style="max-width: 100%; max-height: 50vh; border-radius: 8px; object-fit: contain; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);"/>`;
       } else if (msg.type === 'video') {
         modalTitle.textContent = 'Video Media Viewer';
-        mediaDetails = msg.rawData?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.video || {
-          id: 'Unknown',
-          mime_type: 'video/mp4'
-        };
-        mediaHtml = `<video src="${msg.mediaPath || '#'}" controls autoplay style="max-width: 100%; max-height: 50vh; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);"></video>`;
+        mediaDetails = msg.rawData?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.video || {};
+        mediaHtml = `<video id="previewVideoEl" src="${msg.mediaPath || '#'}" controls autoplay style="max-width: 100%; max-height: 50vh; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);"></video>`;
       } else if (msg.type === 'audio') {
         modalTitle.textContent = msg.rawData?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.audio?.voice ? 'Voice Note Viewer' : 'Audio Media Viewer';
-        mediaDetails = msg.rawData?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.audio || {
-          id: 'Unknown',
-          mime_type: 'audio/ogg'
-        };
+        mediaDetails = msg.rawData?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.audio || {};
         mediaHtml = `<div style="display: flex; flex-direction: column; align-items: center; gap: 1.5rem; width: 100%;">
           <div class="lock-icon-container" style="margin: 0; background: rgba(244, 63, 94, 0.1); border-color: rgba(244, 63, 94, 0.25); color: #fb7185; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
             <svg style="width: 28px; height: 28px; fill: currentColor" viewBox="0 0 24 24">
               <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
             </svg>
           </div>
-          <audio src="${msg.mediaPath || '#'}" controls autoplay style="width: 100%; max-width: 300px;"></audio>
+          <audio id="previewAudioEl" src="${msg.mediaPath || '#'}" controls autoplay style="width: 100%; max-width: 300px;"></audio>
         </div>`;
       }
 
       // Add local file path details to properties JSON display
-      const propertiesToDisplay = {
-        meta_id: mediaDetails.id || 'N/A',
-        mime_type: mediaDetails.mime_type || 'N/A',
-        sha256: mediaDetails.sha256 || 'N/A',
-        vps_local_path: msg.mediaPath || 'N/A',
-        meta_cdn_url: mediaDetails.url || 'N/A'
-      };
+      propertiesToDisplay.meta_id = mediaDetails.id || 'N/A';
+      propertiesToDisplay.mime_type = mediaDetails.mime_type || 'N/A';
+      propertiesToDisplay.sha256 = mediaDetails.sha256 || 'N/A';
+      propertiesToDisplay.meta_cdn_url = mediaDetails.url || 'N/A';
 
       mediaContainer.innerHTML = mediaHtml;
       propertiesBox.textContent = JSON.stringify(propertiesToDisplay, null, 2);
@@ -1208,6 +1205,55 @@
       // Open the modal (unless quiet is true, which is used if audio play triggers it automatically)
       if (!quiet) {
         openModal('previewModal');
+      }
+
+      // 1. Fetch file size dynamically from headers
+      if (msg.mediaPath) {
+        fetch(msg.mediaPath, { method: 'HEAD' })
+          .then(res => {
+            const bytes = res.headers.get('content-length');
+            if (bytes) {
+              const kb = (parseInt(bytes, 10) / 1024).toFixed(2);
+              propertiesToDisplay.file_size = `${kb} KB (${bytes} bytes)`;
+            } else {
+              propertiesToDisplay.file_size = 'Unknown';
+            }
+            propertiesBox.textContent = JSON.stringify(propertiesToDisplay, null, 2);
+          })
+          .catch(() => {
+            propertiesToDisplay.file_size = 'N/A';
+            propertiesBox.textContent = JSON.stringify(propertiesToDisplay, null, 2);
+          });
+      }
+
+      // 2. Extract dimensions/durations on load
+      if (msg.type === 'image') {
+        const img = document.getElementById('previewImageEl');
+        if (img) {
+          img.onload = () => {
+            propertiesToDisplay.dimensions = `${img.naturalWidth} x ${img.naturalHeight} px`;
+            propertiesToDisplay.aspect_ratio = (img.naturalWidth / img.naturalHeight).toFixed(2);
+            propertiesBox.textContent = JSON.stringify(propertiesToDisplay, null, 2);
+          };
+        }
+      } else if (msg.type === 'video') {
+        const video = document.getElementById('previewVideoEl');
+        if (video) {
+          video.onloadedmetadata = () => {
+            propertiesToDisplay.dimensions = `${video.videoWidth} x ${video.videoHeight} px`;
+            propertiesToDisplay.aspect_ratio = (video.videoWidth / video.videoHeight).toFixed(2);
+            propertiesToDisplay.duration = `${video.duration.toFixed(2)} seconds`;
+            propertiesBox.textContent = JSON.stringify(propertiesToDisplay, null, 2);
+          };
+        }
+      } else if (msg.type === 'audio') {
+        const audio = document.getElementById('previewAudioEl');
+        if (audio) {
+          audio.onloadedmetadata = () => {
+            propertiesToDisplay.duration = `${audio.duration.toFixed(2)} seconds`;
+            propertiesBox.textContent = JSON.stringify(propertiesToDisplay, null, 2);
+          };
+        }
       }
     }
 
