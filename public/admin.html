@@ -653,32 +653,8 @@
 
     <!-- Table Container -->
     <main class="table-container">
-      <table id="messagesTable">
-        <thead>
-          <tr>
-            <th>WhatsApp ID</th>
-            <th>Message Body</th>
-            <th>Timestamp</th>
-            <th>Status</th>
-            <th>Replies</th>
-            <th>Notes</th>
-            <th style="width: 120px;">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="messagesTableBody">
-          <!-- Dynamically populated -->
-        </tbody>
-      </table>
-      <div id="emptyState" class="empty-state" style="display: none;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="8" y1="12" x2="16" y2="12"></line>
-        </svg>
-        <p>No messages found in the JSON store.</p>
-      </div>
-
       <!-- Pagination Controls -->
-      <div id="paginationControls" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-top: 1px solid var(--glass-border); flex-wrap: wrap; gap: 1rem; margin-top: auto; background: rgba(15, 23, 42, 0.3);">
+      <div id="paginationControls" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid var(--glass-border); flex-wrap: wrap; gap: 1rem; background: rgba(15, 23, 42, 0.3);">
         <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
           <span>Show</span>
           <select id="pageSizeSelect" class="input-control" onchange="changePageSize(this.value)" style="padding: 0.25rem 0.5rem; width: auto; min-width: 60px; height: auto; background: var(--bg-dark); border-color: var(--glass-border); color: var(--text-main); border-radius: 4px;">
@@ -703,6 +679,31 @@
           </button>
         </div>
       </div>
+
+      <table id="messagesTable">
+        <thead>
+          <tr>
+            <th>WhatsApp ID</th>
+            <th>Message Body</th>
+            <th>Timestamp</th>
+            <th>Status</th>
+            <th>Replies</th>
+            <th>Notes</th>
+            <th style="width: 120px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="messagesTableBody">
+          <!-- Dynamically populated -->
+        </tbody>
+      </table>
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="8" y1="12" x2="16" y2="12"></line>
+        </svg>
+        <p>No messages found in the JSON store.</p>
+      </div>
+
     </main>
   </div>
 
