@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const logger = require('./logger');
+const logger = require('../middleware/logger');
 
 const SECRET_KEY = process.env.WHATSAPP_TOKEN || 'whatsapp_webhook_super_secret_fallback_key';
 
