@@ -955,9 +955,19 @@
         // Format timestamp
         const dateStr = new Date(msg.createdAt || (msg.timestamp * 1000)).toLocaleString();
 
+        let bodyContent = escapeHtml(msg.body);
+        if (msg.type === 'image') {
+          bodyContent = `<span style="color: var(--accent-primary); display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 500;">
+            <svg style="width: 16px; height: 16px; fill: currentColor; flex-shrink: 0;" viewBox="0 0 24 24">
+              <path d="M19 19H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 9h8V1H14v8zm2-6h4v4h-4V3zm-1 9l-3.5 4.5-2.5-3L5 17h14l-4-5z"/>
+            </svg>
+            ${msg.body ? escapeHtml(msg.body) : '<span style="font-style: italic; opacity: 0.7;">Image</span>'}
+          </span>`;
+        }
+
         tr.innerHTML = `
           <td class="phone-col">${escapeHtml(msg.from)}</td>
-          <td><div class="text-body-col" title="${escapeHtml(msg.body)}">${escapeHtml(msg.body)}</div></td>
+          <td><div class="text-body-col" title="${escapeHtml(msg.body)}">${bodyContent}</div></td>
           <td style="font-size:0.85rem; color:var(--text-muted)">${dateStr}</td>
           <td><span class="badge badge-${msg.status}">${msg.status}</span></td>
           <td>

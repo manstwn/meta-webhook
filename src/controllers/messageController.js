@@ -46,13 +46,13 @@ function createMessage(req, res) {
   try {
     const { from, body, type, status, notes } = req.body;
     
-    if (!from || !body) {
+    if (!from || (type !== 'image' && !body)) {
       return res.status(400).json({ error: 'Missing required fields: from and body' });
     }
     
     const saved = storage.saveMessage({
       from,
-      body,
+      body: body || '',
       type: type || 'text',
       status: status || 'received',
       notes: notes || ''

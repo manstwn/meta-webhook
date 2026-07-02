@@ -76,6 +76,8 @@ async function processPayloadAsync(body) {
           let bodyText = '';
           if (type === 'text' && msg.text && msg.text.body) {
             bodyText = msg.text.body;
+          } else if (type === 'image' && msg.image) {
+            bodyText = msg.image.caption || '';
           }
 
           logger.info(`Incoming Message - ID: ${msgId}, From: ${from}, Type: ${type}, Body: "${bodyText}", Timestamp: ${timestamp}`);
