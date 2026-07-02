@@ -676,6 +676,33 @@
         </svg>
         <p>No messages found in the JSON store.</p>
       </div>
+
+      <!-- Pagination Controls -->
+      <div id="paginationControls" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-top: 1px solid var(--glass-border); flex-wrap: wrap; gap: 1rem; margin-top: auto; background: rgba(15, 23, 42, 0.3);">
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+          <span>Show</span>
+          <select id="pageSizeSelect" class="input-control" onchange="changePageSize(this.value)" style="padding: 0.25rem 0.5rem; width: auto; min-width: 60px; height: auto; background: var(--bg-dark); border-color: var(--glass-border); color: var(--text-main); border-radius: 4px;">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+          </select>
+          <span>entries</span>
+        </div>
+        <div id="paginationInfo" style="font-size: 0.85rem; color: var(--text-muted);">
+          Showing 0 to 0 of 0 entries
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.35rem;">
+          <button class="btn btn-secondary" id="btnPrevPage" onclick="prevPage()" style="padding: 0.4rem 0.75rem; font-size: 0.8rem; height: auto;">
+            &larr; Prev
+          </button>
+          <div id="pageNumberButtons" style="display: flex; gap: 0.25rem;">
+            <!-- Dynamically populated page buttons -->
+          </div>
+          <button class="btn btn-secondary" id="btnNextPage" onclick="nextPage()" style="padding: 0.4rem 0.75rem; font-size: 0.8rem; height: auto;">
+            Next &rarr;
+          </button>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -993,7 +1020,8 @@
         });
         await handleResponse(response);
         messages = await response.json();
-        renderTable(messages);
+        currentPage = 1;
+        applyFilters();
       } catch (err) {
         if (err.message !== 'Unauthorized') {
           showToast('Error loading messages database', 'danger');
@@ -1110,17 +1138,112 @@
       });
     }
 
+    // Pagination state variables
+    let currentPage = 1;
+    let pageSize = 10;
+    let filteredMessagesList = [];
+
     function applyFilters() {
       const search = document.getElementById('searchInput').value.toLowerCase();
       const status = document.getElementById('statusFilter').value;
 
-      const filtered = messages.filter(msg => {
-        const matchesSearch = msg.from.toLowerCase().includes(search) || msg.body.toLowerCase().includes(search);
+      filteredMessagesList = messages.filter(msg => {
+        const matchesSearch = msg.from.toLowerCase().includes(search) || 
+                              (msg.body && msg.body.toLowerCase().includes(search)) ||
+                              (msg.notes && msg.notes.toLowerCase().includes(search)) ||
+                              msg.id.toLowerCase().includes(search);
+        
         const matchesStatus = status === 'all' || msg.status === status;
+
         return matchesSearch && matchesStatus;
       });
 
-      renderTable(filtered);
+      currentPage = 1;
+      renderPaginatedTable();
+    }
+
+    function renderPaginatedTable() {
+      const totalItems = filteredMessagesList.length;
+      const totalPages = Math.ceil(totalItems / pageSize) || 1;
+
+      // Keep currentPage in valid boundaries
+      if (currentPage < 1) currentPage = 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = Math.min(startIndex + pageSize, totalItems);
+      const pageItems = filteredMessagesList.slice(startIndex, endIndex);
+
+      // Render the current page rows
+      renderTable(pageItems);
+
+      // Update Pagination Info label
+      const infoEl = document.getElementById('paginationInfo');
+      if (infoEl) {
+        if (totalItems === 0) {
+          infoEl.textContent = 'Showing 0 to 0 of 0 entries';
+        } else {
+          infoEl.textContent = `Showing ${startIndex + 1} to ${endIndex} of ${totalItems} entries`;
+        }
+      }
+
+      // Update navigation button states
+      const btnPrev = document.getElementById('btnPrevPage');
+      const btnNext = document.getElementById('btnNextPage');
+      if (btnPrev) btnPrev.disabled = currentPage === 1;
+      if (btnNext) btnNext.disabled = currentPage === totalPages;
+
+      // Render numeric page buttons
+      renderPageNumbers(totalPages);
+    }
+
+    function renderPageNumbers(totalPages) {
+      const container = document.getElementById('pageNumberButtons');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const maxButtons = 5;
+      let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+      let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+      if (endPage - startPage + 1 < maxButtons) {
+        startPage = Math.max(1, endPage - maxButtons + 1);
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `btn ${i === currentPage ? '' : 'btn-secondary'}`;
+        btn.style.padding = '0.4rem 0.75rem';
+        btn.style.fontSize = '0.8rem';
+        btn.style.height = 'auto';
+        btn.onclick = () => {
+          currentPage = i;
+          renderPaginatedTable();
+        };
+        container.appendChild(btn);
+      }
+    }
+
+    function prevPage() {
+      if (currentPage > 1) {
+        currentPage--;
+        renderPaginatedTable();
+      }
+    }
+
+    function nextPage() {
+      const totalPages = Math.ceil(filteredMessagesList.length / pageSize) || 1;
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderPaginatedTable();
+      }
+    }
+
+    function changePageSize(size) {
+      pageSize = parseInt(size, 10);
+      currentPage = 1;
+      renderPaginatedTable();
     }
 
     // Modal Control
