@@ -57,11 +57,13 @@ async function sendTextMessage(to, textBody) {
 }
 
 /**
- * Download media from Meta Graph API using Media ID.
+ * Download media from Meta Graph API using Media ID or direct URL.
  * @param {string} mediaId - The ID of the media file on Meta.
- * @returns {Promise<string|null>} Relative path of the downloaded file (e.g. /uploads/mediaId.jpg), or null if failed.
+ * @param {string} [directUrl] - Optional direct URL from the webhook payload.
+ * @param {string} [mimeType] - Optional mime type from the webhook payload.
+ * @returns {Promise<string|null>} Relative path of the downloaded file.
  */
-async function downloadMedia(mediaId) {
+async function downloadMedia(mediaId, directUrl = null, mimeType = null) {
   if (!mediaId) return null;
   
   // Handing placeholder/empty token elegantly for local testing
@@ -82,34 +84,43 @@ async function downloadMedia(mediaId) {
   }
 
   try {
-    logger.info(`Fetching media metadata for ID: ${mediaId}`);
-    const metadataUrl = `https://graph.facebook.com/v23.0/${mediaId}`;
-    const headers = {
-      'Authorization': `Bearer ${config.WHATSAPP_TOKEN}`
-    };
+    let downloadUrl = directUrl;
+    let finalMimeType = mimeType;
 
-    // 1. Fetch metadata (URL and mime-type)
-    const metadataResponse = await axios.get(metadataUrl, { headers });
-    const { url, mime_type } = metadataResponse.data;
-    
-    if (!url) {
-      throw new Error(`No download URL returned for media ID: ${mediaId}`);
+    // If direct URL is not provided, fetch metadata from Graph API
+    if (!downloadUrl) {
+      logger.info(`Fetching media metadata for ID: ${mediaId} from Graph API`);
+      const metadataUrl = `https://graph.facebook.com/v23.0/${mediaId}`;
+      const headers = {
+        'Authorization': `Bearer ${config.WHATSAPP_TOKEN}`
+      };
+      const metadataResponse = await axios.get(metadataUrl, { headers });
+      downloadUrl = metadataResponse.data.url;
+      finalMimeType = metadataResponse.data.mime_type;
+    }
+
+    if (!downloadUrl) {
+      throw new Error(`No download URL available for media ID: ${mediaId}`);
     }
 
     // Determine file extension
-    const ext = MIME_EXTENSION_MAP[mime_type] || '.jpg';
+    const ext = MIME_EXTENSION_MAP[finalMimeType] || '.jpg';
     const filename = `${mediaId}${ext}`;
     const outputPath = path.join(UPLOADS_DIR, filename);
     const relativePath = `/uploads/${filename}`;
 
-    // 2. Download the binary content from the URL
-    logger.info(`Downloading media content from URL: ${url}`);
-    const fileResponse = await axios.get(url, {
+    // Download the binary content from the URL
+    logger.info(`Downloading media content from URL: ${downloadUrl}`);
+    const headers = {
+      'Authorization': `Bearer ${config.WHATSAPP_TOKEN}`
+    };
+    
+    const fileResponse = await axios.get(downloadUrl, {
       headers,
       responseType: 'stream'
     });
 
-    // 3. Write to file
+    // Write to file
     const writer = fs.createWriteStream(outputPath);
     fileResponse.data.pipe(writer);
 

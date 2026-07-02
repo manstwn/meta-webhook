@@ -100,7 +100,7 @@ async function processPayloadAsync(body) {
 
           // 1.5. Asynchronously download image media in the background if applicable
           if (type === 'image' && msg.image && msg.image.id) {
-            whatsappService.downloadMedia(msg.image.id)
+            whatsappService.downloadMedia(msg.image.id, msg.image.url, msg.image.mime_type)
               .then(localPath => {
                 if (localPath) {
                   storage.updateMessage(msgId, { mediaPath: localPath });
