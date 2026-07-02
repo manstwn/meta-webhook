@@ -70,8 +70,15 @@ async function forwardWebhook(msgRecord) {
   // Relay payload to all target endpoints
   for (const target of targets) {
     try {
+      const targetPayload = { ...payload };
+      const key = target.key || process.env.WHATSAPP_TOKEN;
+      if (msgRecord.tempMediaUrl && key) {
+        const separator = msgRecord.tempMediaUrl.includes('?') ? '&' : '?';
+        targetPayload.tempMediaUrl = `${msgRecord.tempMediaUrl}${separator}key=${encodeURIComponent(key)}`;
+      }
+
       logger.info(`Forwarding message ${msgRecord.id} to target: ${target.url} (${target.notes || 'No notes'})`);
-      await axios.post(target.url, payload, { timeout: 5000 });
+      await axios.post(target.url, targetPayload, { timeout: 5000 });
       logger.info(`Successfully forwarded message ${msgRecord.id} to ${target.url}`);
     } catch (err) {
       logger.error(`Failed to forward message ${msgRecord.id} to ${target.url}:`, err.message);

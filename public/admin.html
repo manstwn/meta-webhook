@@ -816,13 +816,14 @@
               <tr style="border-bottom: 1px solid var(--glass-border); background: rgba(255,255,255,0.02);">
                 <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff;">URL / Endpoint</th>
                 <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff; width: 120px;">Status</th>
+                <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff; width: 165px;">Media Access Key</th>
                 <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff;">Notes / Description</th>
                 <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff; width: 160px; text-align: right;">Actions</th>
               </tr>
             </thead>
             <tbody id="domainsTableBody">
               <tr>
-                <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
                   Loading forwarding target domains...
                 </td>
               </tr>
@@ -927,6 +928,10 @@
           <div class="form-group">
             <label for="domainNotes">Notes / Description</label>
             <input type="text" id="domainNotes" class="form-control" placeholder="e.g. CRM system, Slack relay...">
+          </div>
+          <div class="form-group">
+            <label for="domainKey">Media Access Key (Passkey)</label>
+            <input type="text" id="domainKey" class="form-control" placeholder="Leave blank to auto-generate a secure key">
           </div>
           <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1.25rem;">
             <input type="checkbox" id="domainEnabled" checked style="width: 18px; height: 18px; cursor: pointer;">
@@ -1795,7 +1800,7 @@
       if (domains.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+            <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
               No forwarding target domains configured. Click "Add New Target" to configure one.
             </td>
           </tr>
@@ -1815,6 +1820,7 @@
                 ${badgeLabel}
               </span>
             </td>
+            <td style="padding: 1rem 1.25rem; font-family: monospace; color: #f59e0b; font-size: 0.8rem;">${escapeHtml(d.key || '-')}</td>
             <td style="padding: 1rem 1.25rem; color: var(--text-muted);">${escapeHtml(d.notes || '-')}</td>
             <td style="padding: 1rem 1.25rem; text-align: right;">
               <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
@@ -1840,6 +1846,7 @@
 
       form.reset();
       document.getElementById('domainId').value = '';
+      document.getElementById('domainKey').value = '';
 
       if (id) {
         title.textContent = 'Edit Forwarding Target';
@@ -1848,6 +1855,7 @@
           document.getElementById('domainId').value = d.id;
           document.getElementById('domainUrl').value = d.url;
           document.getElementById('domainNotes').value = d.notes || '';
+          document.getElementById('domainKey').value = d.key || '';
           document.getElementById('domainEnabled').checked = d.enabled;
         }
       } else {
@@ -1864,6 +1872,7 @@
         const id = document.getElementById('domainId').value;
         const url = document.getElementById('domainUrl').value;
         const notes = document.getElementById('domainNotes').value;
+        const key = document.getElementById('domainKey').value;
         const enabled = document.getElementById('domainEnabled').checked;
 
         const res = await fetch('/api/forward-urls', {
@@ -1872,7 +1881,7 @@
             'Content-Type': 'application/json',
             ...getAuthHeader()
           },
-          body: JSON.stringify({ id: id || undefined, url, notes, enabled })
+          body: JSON.stringify({ id: id || undefined, url, notes, key, enabled })
         });
 
         await handleResponse(res);

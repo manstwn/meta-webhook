@@ -176,6 +176,9 @@ function saveDomain(domain) {
   const domains = readDomains();
   const index = domains.findIndex(d => d.id === domain.id);
   
+  // Clean key or auto-generate a secure random string
+  domain.key = domain.key && domain.key.trim() ? domain.key.trim() : `key_${Math.random().toString(36).substr(2, 9)}${Math.random().toString(36).substr(2, 6)}`;
+  
   if (index !== -1) {
     domains[index] = { ...domains[index], ...domain, updatedAt: new Date().toISOString() };
   } else {

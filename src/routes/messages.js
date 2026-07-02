@@ -6,9 +6,27 @@ const messageController = require('../controllers/messageController');
 const authenticatePIN = require('../middleware/auth');
 const cryptoHelper = require('../utils/cryptoHelper');
 
-// Serve temporary expiring media files (No PIN auth required, validated via signed token)
+// Serve temporary expiring media files (No PIN auth required, validated via signed token and access key)
 router.get('/temp-media/:token', (req, res) => {
   const { token } = req.params;
+  
+  // 1. Enforce Media Access Key check
+  const reqKey = req.query.key;
+  const storage = require('../utils/storage');
+  const domains = storage.readDomains();
+  const hasValidKey = domains.some(d => d.enabled && d.key && d.key === reqKey) ||
+                       (reqKey && reqKey === process.env.WHATSAPP_TOKEN) ||
+                       (reqKey && reqKey === process.env.ADMIN_PIN);
+
+  if (!hasValidKey) {
+    return res.status(403).send(`
+      <div style="font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 4rem 2rem; background: #0f172a; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <h1 style="color: #ef4444; font-size: 2.5rem; margin-bottom: 1rem;">Access Denied</h1>
+        <p style="color: #94a3b8; font-size: 1.1rem; max-width: 500px; line-height: 1.6;">A valid Media Access Key is required to access or download this media file.</p>
+      </div>
+    `);
+  }
+
   const filePath = cryptoHelper.verifyTempToken(token);
   
   if (!filePath) {
