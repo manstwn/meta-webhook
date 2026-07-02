@@ -8,6 +8,7 @@ const config = require('./config/env');
 const logger = require('./middleware/logger');
 const webhookRoutes = require('./routes/webhook');
 const messageRoutes = require('./routes/messages');
+const domainsRoutes = require('./routes/domains');
 
 const app = express();
 
@@ -80,6 +81,9 @@ app.use('/webhook', webhookRoutes);
 
 // Register Messages API routes
 app.use('/api/messages', messageRoutes);
+
+// Register Forward URLs API routes
+app.use('/api/forward-urls', domainsRoutes);
 
 // Catch-all route handler for 404 Not Found
 app.use((req, res) => {

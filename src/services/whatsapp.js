@@ -184,5 +184,6 @@ async function downloadMedia(mediaId, directUrl = null, mimeType = null) {
 
 module.exports = {
   sendTextMessage,
-  downloadMedia
+  downloadMedia,
+  MIME_EXTENSION_MAP
 };

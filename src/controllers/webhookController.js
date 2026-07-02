@@ -31,28 +31,51 @@ function verifyWebhook(req, res) {
 }
 
 /**
- * Forward parsed webhook message to external domain
+ * Forward parsed webhook message to external domains (multicast)
  */
 async function forwardWebhook(msgRecord) {
-  const forwardUrl = process.env.FORWARD_URL;
-  if (!forwardUrl) return;
+  const payload = {
+    id: msgRecord.id,
+    from: msgRecord.from,
+    type: msgRecord.type,
+    body: msgRecord.body,
+    timestamp: msgRecord.timestamp,
+    tempMediaUrl: msgRecord.tempMediaUrl || null,
+    rawData: msgRecord.rawData
+  };
 
+  const targets = [];
+
+  // Add static URL from environment if configured
+  if (process.env.FORWARD_URL) {
+    targets.push({ url: process.env.FORWARD_URL, notes: 'Static environment target' });
+  }
+
+  // Add dynamic target URLs from database (only enabled ones)
   try {
-    const payload = {
-      id: msgRecord.id,
-      from: msgRecord.from,
-      type: msgRecord.type,
-      body: msgRecord.body,
-      timestamp: msgRecord.timestamp,
-      tempMediaUrl: msgRecord.tempMediaUrl || null,
-      rawData: msgRecord.rawData
-    };
+    const dbDomains = storage.readDomains();
+    if (dbDomains && Array.isArray(dbDomains)) {
+      dbDomains.forEach(d => {
+        if (d.enabled && d.url) {
+          targets.push(d);
+        }
+      });
+    }
+  } catch (dbErr) {
+    logger.error('Error reading forwarding domains list for relay:', dbErr);
+  }
 
-    logger.info(`Forwarding message ${msgRecord.id} to external URL: ${forwardUrl}`);
-    await axios.post(forwardUrl, payload, { timeout: 5000 });
-    logger.info(`Successfully forwarded message ${msgRecord.id} to ${forwardUrl}`);
-  } catch (err) {
-    logger.error(`Failed to forward message ${msgRecord.id} to ${forwardUrl}:`, err.message);
+  if (targets.length === 0) return;
+
+  // Relay payload to all target endpoints
+  for (const target of targets) {
+    try {
+      logger.info(`Forwarding message ${msgRecord.id} to target: ${target.url} (${target.notes || 'No notes'})`);
+      await axios.post(target.url, payload, { timeout: 5000 });
+      logger.info(`Successfully forwarded message ${msgRecord.id} to ${target.url}`);
+    } catch (err) {
+      logger.error(`Failed to forward message ${msgRecord.id} to ${target.url}:`, err.message);
+    }
   }
 }
 
@@ -117,17 +140,20 @@ async function processPayloadAsync(body, req) {
           // Construct temporary signed expiring media URL if applicable
           let tempMediaUrl = null;
           if (type === 'image' && msg.image && msg.image.id) {
-            const ext = whatsappService.MIME_EXTENSION_MAP[msg.image.mime_type] || '.jpg';
+            const mime = msg.image.mime_type ? msg.image.mime_type.split(';')[0].trim().toLowerCase() : '';
+            const ext = whatsappService.MIME_EXTENSION_MAP[mime] || '.jpg';
             const filePath = `public/uploads/${msg.image.id}${ext}`;
             const token = cryptoHelper.generateTempToken(filePath);
             tempMediaUrl = `${req.protocol}://${req.get('host')}/api/messages/temp-media/${token}`;
           } else if (type === 'video' && msg.video && msg.video.id) {
-            const ext = whatsappService.MIME_EXTENSION_MAP[msg.video.mime_type] || '.mp4';
+            const mime = msg.video.mime_type ? msg.video.mime_type.split(';')[0].trim().toLowerCase() : '';
+            const ext = whatsappService.MIME_EXTENSION_MAP[mime] || '.mp4';
             const filePath = `public/uploads/${msg.video.id}${ext}`;
             const token = cryptoHelper.generateTempToken(filePath);
             tempMediaUrl = `${req.protocol}://${req.get('host')}/api/messages/temp-media/${token}`;
           } else if (type === 'audio' && msg.audio && msg.audio.id) {
-            const ext = whatsappService.MIME_EXTENSION_MAP[msg.audio.mime_type] || '.ogg';
+            const mime = msg.audio.mime_type ? msg.audio.mime_type.split(';')[0].trim().toLowerCase() : '';
+            const ext = whatsappService.MIME_EXTENSION_MAP[mime] || '.ogg';
             const filePath = `public/uploads/${msg.audio.id}${ext}`;
             const token = cryptoHelper.generateTempToken(filePath);
             tempMediaUrl = `${req.protocol}://${req.get('host')}/api/messages/temp-media/${token}`;

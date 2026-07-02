@@ -655,6 +655,9 @@
       <button class="btn btn-secondary" id="tabBtnDocs" onclick="switchTab('docs')" style="padding: 0.5rem 1.1rem; border-radius: 6px; font-size: 0.85rem; background: transparent; border: 1px solid var(--glass-border);">
         Webhook Forwarding API Docs
       </button>
+      <button class="btn btn-secondary" id="tabBtnDomains" onclick="switchTab('domains')" style="padding: 0.5rem 1.1rem; border-radius: 6px; font-size: 0.85rem; background: transparent; border: 1px solid var(--glass-border);">
+        Forward Targets CRUD
+      </button>
     </div>
 
     <!-- Logs Database Tab Content -->
@@ -787,6 +790,47 @@
         </div>
       </section>
     </div>
+ 
+    <!-- Webhook Forwarding Domains CRUD Tab Content -->
+    <div id="domainsTabContent" style="display: none; animation: fadeIn 0.3s forwards;">
+      <section class="card" style="padding: 2.25rem; background: rgba(15, 23, 42, 0.45); border-radius: 16px; border: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h2 style="font-size: 1.6rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.65rem;">
+              <svg style="width:24px; height:24px; fill:#38bdf8" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+              Forwarding Target Domains List
+            </h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">
+              Manage the list of external endpoints to which incoming message events will be multi-cast in real-time.
+            </p>
+          </div>
+          <button class="btn" onclick="openDomainModal()" style="display: flex; align-items: center; gap: 0.5rem;">
+            <svg style="width:18px; height:18px; fill:currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            Add New Target
+          </button>
+        </div>
+
+        <div style="overflow-x: auto; border: 1px solid var(--glass-border); border-radius: 12px; background: rgba(0,0,0,0.2);">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--glass-border); background: rgba(255,255,255,0.02);">
+                <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff;">URL / Endpoint</th>
+                <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff; width: 120px;">Status</th>
+                <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff;">Notes / Description</th>
+                <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff; width: 160px; text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="domainsTableBody">
+              <tr>
+                <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                  Loading forwarding target domains...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
   </div>
 
   <!-- Create Modal -->
@@ -866,6 +910,37 @@
     </div>
   </div>
 
+  <!-- Domain Forwarding CRUD Modal -->
+  <div id="domainModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 id="domainModalTitle">Add Forwarding Target</h3>
+        <button class="btn-close" onclick="closeModal('domainModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="domainForm" onsubmit="handleSaveDomain(event)">
+          <input type="hidden" id="domainId">
+          <div class="form-group">
+            <label for="domainUrl">Target Endpoint URL</label>
+            <input type="url" id="domainUrl" class="form-control" placeholder="https://example.com/endpoint" required>
+          </div>
+          <div class="form-group">
+            <label for="domainNotes">Notes / Description</label>
+            <input type="text" id="domainNotes" class="form-control" placeholder="e.g. CRM system, Slack relay...">
+          </div>
+          <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1.25rem;">
+            <input type="checkbox" id="domainEnabled" checked style="width: 18px; height: 18px; cursor: pointer;">
+            <label for="domainEnabled" style="margin: 0; cursor: pointer;">Enable Webhook Forwarding</label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('domainModal')">Cancel</button>
+        <button type="submit" form="domainForm" class="btn">Save Target</button>
+      </div>
+    </div>
+  </div>
+ 
   <!-- View Modal -->
   <div id="viewModal" class="modal-overlay">
     <div class="modal-card" style="max-width: 800px; width: 90%;">
@@ -1696,26 +1771,190 @@
       }
     };
 
+    let domains = [];
+
+    async function fetchDomains() {
+      try {
+        const res = await fetch('/api/forward-urls', {
+          headers: {
+            ...getAuthHeader()
+          }
+        });
+        const authenticatedRes = await handleResponse(res);
+        domains = await authenticatedRes.json();
+        renderDomains();
+      } catch (err) {
+        console.error('Error fetching forwarding domains:', err);
+      }
+    }
+
+    function renderDomains() {
+      const tbody = document.getElementById('domainsTableBody');
+      if (!tbody) return;
+
+      if (domains.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+              No forwarding target domains configured. Click "Add New Target" to configure one.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = domains.map(d => {
+        const badgeClass = d.enabled ? 'badge-received' : 'badge-replied';
+        const badgeLabel = d.enabled ? 'Enabled' : 'Disabled';
+        
+        return `
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <td style="padding: 1rem 1.25rem; font-family: monospace; color: #cbd5e1; word-break: break-all;">${escapeHtml(d.url)}</td>
+            <td style="padding: 1rem 1.25rem;">
+              <span class="status-badge ${badgeClass}" onclick="toggleDomainStatus('${d.id}')" style="cursor: pointer; user-select: none;" title="Click to toggle status">
+                ${badgeLabel}
+              </span>
+            </td>
+            <td style="padding: 1rem 1.25rem; color: var(--text-muted);">${escapeHtml(d.notes || '-')}</td>
+            <td style="padding: 1rem 1.25rem; text-align: right;">
+              <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="openDomainModal('${d.id}')" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; border-radius: 4px;">
+                  Edit
+                </button>
+                <button class="btn btn-secondary" onclick="handleDeleteDomain('${d.id}')" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; border-radius: 4px; color: var(--accent-danger); border-color: rgba(239, 68, 68, 0.25);">
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openDomainModal(id = null) {
+      const modal = document.getElementById('domainModal');
+      const title = document.getElementById('domainModalTitle');
+      const form = document.getElementById('domainForm');
+      
+      if (!modal || !title || !form) return;
+
+      form.reset();
+      document.getElementById('domainId').value = '';
+
+      if (id) {
+        title.textContent = 'Edit Forwarding Target';
+        const d = domains.find(x => x.id === id);
+        if (d) {
+          document.getElementById('domainId').value = d.id;
+          document.getElementById('domainUrl').value = d.url;
+          document.getElementById('domainNotes').value = d.notes || '';
+          document.getElementById('domainEnabled').checked = d.enabled;
+        }
+      } else {
+        title.textContent = 'Add Forwarding Target';
+        document.getElementById('domainEnabled').checked = true;
+      }
+
+      openModal('domainModal');
+    }
+
+    async function handleSaveDomain(e) {
+      e.preventDefault();
+      try {
+        const id = document.getElementById('domainId').value;
+        const url = document.getElementById('domainUrl').value;
+        const notes = document.getElementById('domainNotes').value;
+        const enabled = document.getElementById('domainEnabled').checked;
+
+        const res = await fetch('/api/forward-urls', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader()
+          },
+          body: JSON.stringify({ id: id || undefined, url, notes, enabled })
+        });
+
+        await handleResponse(res);
+        showToast('Forward target saved successfully', 'success');
+        closeModal('domainModal');
+        fetchDomains();
+      } catch (err) {
+        console.error('Error saving forwarding domain target:', err);
+        showToast('Failed to save forward target', 'danger');
+      }
+    }
+
+    async function toggleDomainStatus(id) {
+      const d = domains.find(x => x.id === id);
+      if (!d) return;
+
+      try {
+        const res = await fetch('/api/forward-urls', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader()
+          },
+          body: JSON.stringify({ ...d, enabled: !d.enabled })
+        });
+
+        await handleResponse(res);
+        showToast(`Forward target ${!d.enabled ? 'enabled' : 'disabled'}`, 'success');
+        fetchDomains();
+      } catch (err) {
+        console.error('Error toggling forwarding domain status:', err);
+        showToast('Failed to update status', 'danger');
+      }
+    }
+
+    async function handleDeleteDomain(id) {
+      if (!confirm('Are you sure you want to delete this forwarding target?')) return;
+
+      try {
+        const res = await fetch(`/api/forward-urls/${id}`, {
+          method: 'DELETE',
+          headers: {
+            ...getAuthHeader()
+          }
+        });
+
+        await handleResponse(res);
+        showToast('Forward target deleted', 'success');
+        fetchDomains();
+      } catch (err) {
+        console.error('Error deleting forwarding domain:', err);
+        showToast('Failed to delete forward target', 'danger');
+      }
+    }
+
     function switchTab(tabId) {
       const logsTab = document.getElementById('logsTabContent');
       const docsTab = document.getElementById('docsTabContent');
+      const domainsTab = document.getElementById('domainsTabContent');
       const tabBtnLogs = document.getElementById('tabBtnLogs');
       const tabBtnDocs = document.getElementById('tabBtnDocs');
+      const tabBtnDomains = document.getElementById('tabBtnDomains');
 
-      if (!logsTab || !docsTab || !tabBtnLogs || !tabBtnDocs) return;
+      if (!logsTab || !docsTab || !domainsTab || !tabBtnLogs || !tabBtnDocs || !tabBtnDomains) return;
+
+      // Reset all buttons to secondary style
+      [tabBtnLogs, tabBtnDocs, tabBtnDomains].forEach(btn => {
+        btn.style.background = 'transparent';
+        btn.style.border = '1px solid var(--glass-border)';
+      });
+
+      // Hide all tabs
+      logsTab.style.display = 'none';
+      docsTab.style.display = 'none';
+      domainsTab.style.display = 'none';
 
       if (tabId === 'logs') {
         logsTab.style.display = 'block';
-        docsTab.style.display = 'none';
         tabBtnLogs.style.background = 'var(--accent-primary)';
         tabBtnLogs.style.border = 'none';
-        tabBtnDocs.style.background = 'transparent';
-        tabBtnDocs.style.border = '1px solid var(--glass-border)';
-      } else {
-        logsTab.style.display = 'none';
+      } else if (tabId === 'docs') {
         docsTab.style.display = 'block';
-        tabBtnLogs.style.background = 'transparent';
-        tabBtnLogs.style.border = '1px solid var(--glass-border)';
         tabBtnDocs.style.background = 'var(--accent-primary)';
         tabBtnDocs.style.border = 'none';
         
@@ -1724,6 +1963,13 @@
         if (docEl && !docEl.innerHTML) {
           docEl.innerHTML = syntaxHighlightJSON(docPayloadExample);
         }
+      } else if (tabId === 'domains') {
+        domainsTab.style.display = 'block';
+        tabBtnDomains.style.background = 'var(--accent-primary)';
+        tabBtnDomains.style.border = 'none';
+        
+        // Fetch domain targets list
+        fetchDomains();
       }
     }
   </script>

@@ -139,10 +139,71 @@ function deleteMessage(id) {
   return true;
 }
 
+const DOMAINS_FILE = path.join(__dirname, '../../data/forwarding_domains.json');
+
+// Ensure domains file exists
+if (!fs.existsSync(DOMAINS_FILE)) {
+  try {
+    fs.writeFileSync(DOMAINS_FILE, '[]', 'utf8');
+  } catch (err) {
+    logger.error('Failed to initialize forwarding domains store:', err);
+  }
+}
+
+function readDomains() {
+  try {
+    if (!fs.existsSync(DOMAINS_FILE)) return [];
+    const data = fs.readFileSync(DOMAINS_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    logger.error('Error reading forwarding domains store:', error);
+    return [];
+  }
+}
+
+function writeDomainsSafely(domains) {
+  try {
+    const tempFile = `${DOMAINS_FILE}.tmp`;
+    fs.writeFileSync(tempFile, JSON.stringify(domains, null, 2), 'utf-8');
+    fs.renameSync(tempFile, DOMAINS_FILE);
+  } catch (error) {
+    logger.error('Error writing forwarding domains store:', error);
+    throw error;
+  }
+}
+
+function saveDomain(domain) {
+  const domains = readDomains();
+  const index = domains.findIndex(d => d.id === domain.id);
+  
+  if (index !== -1) {
+    domains[index] = { ...domains[index], ...domain, updatedAt: new Date().toISOString() };
+  } else {
+    domain.id = domain.id || `dom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    domain.createdAt = new Date().toISOString();
+    domain.enabled = domain.enabled !== undefined ? domain.enabled : true;
+    domains.push(domain);
+  }
+  
+  writeDomainsSafely(domains);
+  return domain;
+}
+
+function deleteDomain(id) {
+  const domains = readDomains();
+  const filtered = domains.filter(d => d.id !== id);
+  if (filtered.length === domains.length) return false;
+  writeDomainsSafely(filtered);
+  return true;
+}
+
 module.exports = {
   readMessages,
   writeMessagesSafely,
   saveMessage,
   updateMessage,
-  deleteMessage
+  deleteMessage,
+  readDomains,
+  saveDomain,
+  deleteDomain
 };
