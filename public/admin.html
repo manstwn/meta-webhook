@@ -431,19 +431,46 @@
       resize: vertical;
     }
 
-    /* JSON display */
+    /* JSON display and scrollbar styling */
     .json-display {
-      background: rgba(15, 23, 42, 0.85);
+      background: rgba(15, 23, 42, 0.95);
       border: 1px solid var(--glass-border);
       border-radius: 8px;
-      padding: 1rem;
-      font-family: monospace;
+      padding: 1.25rem;
+      font-family: 'Fira Code', 'Cascadia Code', Consolas, Monaco, monospace;
       font-size: 0.85rem;
-      overflow-x: auto;
-      max-height: 300px;
-      color: #6ee7b7;
-      white-space: pre-wrap;
+      overflow: auto;
+      max-height: 350px;
+      color: #e2e8f0;
+      white-space: pre;
+      line-height: 1.5;
     }
+
+    .json-display::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    .json-display::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 4px;
+    }
+    
+    .json-display::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .json-display::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .json-key { color: #f87171; font-weight: 500; }
+    .json-string { color: #34d399; }
+    .json-number { color: #fbbf24; }
+    .json-boolean { color: #60a5fa; }
+    .json-null { color: #a78bfa; }
 
     /* Empty state */
     .empty-state {
@@ -786,7 +813,7 @@
 
   <!-- View Modal -->
   <div id="viewModal" class="modal-overlay">
-    <div class="modal-card">
+    <div class="modal-card" style="max-width: 800px; width: 90%;">
       <div class="modal-header">
         <h3>Raw Message Payload</h3>
         <button class="btn-close" onclick="closeModal('viewModal')">&times;</button>
@@ -1297,12 +1324,34 @@
       openModal('editModal');
     }
 
+    function syntaxHighlightJSON(json) {
+      if (typeof json !== 'string') {
+        json = JSON.stringify(json, null, 2);
+      }
+      json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, function (match) {
+        let cls = 'json-number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'json-key';
+          } else {
+            cls = 'json-string';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'json-boolean';
+        } else if (/null/.test(match)) {
+          cls = 'json-null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+      });
+    }
+
     function viewPayload(id) {
       const msg = messages.find(m => m.id === id);
       if (!msg) return;
 
       const payloadToDisplay = msg.rawData || msg;
-      document.getElementById('jsonPayloadDisplay').textContent = JSON.stringify(payloadToDisplay, null, 2);
+      document.getElementById('jsonPayloadDisplay').innerHTML = syntaxHighlightJSON(payloadToDisplay);
       openModal('viewModal');
     }
 
@@ -1357,7 +1406,7 @@
       propertiesToDisplay.meta_cdn_url = mediaDetails.url || 'N/A';
 
       mediaContainer.innerHTML = mediaHtml;
-      propertiesBox.textContent = JSON.stringify(propertiesToDisplay, null, 2);
+      propertiesBox.innerHTML = syntaxHighlightJSON(propertiesToDisplay);
 
       // Open the modal (unless quiet is true, which is used if audio play triggers it automatically)
       if (!quiet) {
@@ -1375,11 +1424,11 @@
             } else {
               propertiesToDisplay.file_size = 'Unknown';
             }
-            propertiesBox.textContent = JSON.stringify(propertiesToDisplay, null, 2);
+            propertiesBox.innerHTML = syntaxHighlightJSON(propertiesToDisplay);
           })
           .catch(() => {
             propertiesToDisplay.file_size = 'N/A';
-            propertiesBox.textContent = JSON.stringify(propertiesToDisplay, null, 2);
+            propertiesBox.innerHTML = syntaxHighlightJSON(propertiesToDisplay);
           });
       }
 
@@ -1390,7 +1439,7 @@
           img.onload = () => {
             propertiesToDisplay.dimensions = `${img.naturalWidth} x ${img.naturalHeight} px`;
             propertiesToDisplay.aspect_ratio = (img.naturalWidth / img.naturalHeight).toFixed(2);
-            propertiesBox.textContent = JSON.stringify(propertiesToDisplay, null, 2);
+            propertiesBox.innerHTML = syntaxHighlightJSON(propertiesToDisplay);
           };
         }
       } else if (msg.type === 'video') {
@@ -1400,7 +1449,7 @@
             propertiesToDisplay.dimensions = `${video.videoWidth} x ${video.videoHeight} px`;
             propertiesToDisplay.aspect_ratio = (video.videoWidth / video.videoHeight).toFixed(2);
             propertiesToDisplay.duration = `${video.duration.toFixed(2)} seconds`;
-            propertiesBox.textContent = JSON.stringify(propertiesToDisplay, null, 2);
+            propertiesBox.innerHTML = syntaxHighlightJSON(propertiesToDisplay);
           };
         }
       } else if (msg.type === 'audio') {
@@ -1408,7 +1457,7 @@
         if (audio) {
           audio.onloadedmetadata = () => {
             propertiesToDisplay.duration = `${audio.duration.toFixed(2)} seconds`;
-            propertiesBox.textContent = JSON.stringify(propertiesToDisplay, null, 2);
+            propertiesBox.innerHTML = syntaxHighlightJSON(propertiesToDisplay);
           };
         }
       }
