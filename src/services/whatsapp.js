@@ -16,7 +16,15 @@ const MIME_EXTENSION_MAP = {
   'image/jpg': '.jpg',
   'image/png': '.png',
   'image/gif': '.gif',
-  'image/webp': '.webp'
+  'image/webp': '.webp',
+  'video/mp4': '.mp4',
+  'video/3gpp': '.3gp',
+  'video/quicktime': '.mov',
+  'audio/ogg': '.ogg',
+  'audio/mpeg': '.mp3',
+  'audio/mp4': '.m4a',
+  'audio/amr': '.amr',
+  'audio/wav': '.wav'
 };
 
 /**
@@ -65,20 +73,40 @@ async function sendTextMessage(to, textBody) {
  */
 async function downloadMedia(mediaId, directUrl = null, mimeType = null) {
   if (!mediaId) return null;
+
+  const cleanMime = mimeType ? mimeType.split(';')[0].trim().toLowerCase() : '';
+  let mediaCategory = 'image';
+  if (cleanMime.startsWith('video/')) {
+    mediaCategory = 'video';
+  } else if (cleanMime.startsWith('audio/')) {
+    mediaCategory = 'audio';
+  }
+
+  const categoryExtensions = {
+    'image': '.png',
+    'video': '.mp4',
+    'audio': '.ogg'
+  };
+
+  const dummyBinaries = {
+    'image': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    'video': 'AAAAIGZ0eXBtcDQyAAAAAG1wNDJpc29tYXZjMQAAAAhidW1wAAAAH2ZyZWUAAAAAAG1kYXQAAAAAHGZyZWUAAAAAAGZyZWUAAAAAAGZyZWU=',
+    'audio': 'SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYwLjMuMTAwAAAAAAAAAAAAAAD/'
+  };
   
   // Handing placeholder/empty token elegantly for local testing
   if (!config.WHATSAPP_TOKEN || config.WHATSAPP_TOKEN === 'YOUR_PERMANENT_ACCESS_TOKEN' || config.WHATSAPP_TOKEN.trim() === '') {
-    logger.warn(`WhatsApp token is using default placeholder or is empty. Creating fallback dummy image for local testing.`);
-    const filename = `${mediaId}.png`;
+    logger.warn(`WhatsApp token is using default placeholder or is empty. Creating fallback dummy ${mediaCategory} file for local testing.`);
+    const ext = categoryExtensions[mediaCategory];
+    const filename = `${mediaId}${ext}`;
     const outputPath = path.join(UPLOADS_DIR, filename);
+    const base64Content = dummyBinaries[mediaCategory];
     
-    // Tiny 1x1 transparent PNG base64
-    const dummyImageBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
     try {
-      fs.writeFileSync(outputPath, Buffer.from(dummyImageBase64, 'base64'));
+      fs.writeFileSync(outputPath, Buffer.from(base64Content, 'base64'));
       return `/uploads/${filename}`;
     } catch (writeErr) {
-      logger.error('Failed to write dummy image file:', writeErr);
+      logger.error(`Failed to write dummy ${mediaCategory} file:`, writeErr);
       return null;
     }
   }
@@ -103,8 +131,9 @@ async function downloadMedia(mediaId, directUrl = null, mimeType = null) {
       throw new Error(`No download URL available for media ID: ${mediaId}`);
     }
 
-    // Determine file extension
-    const ext = MIME_EXTENSION_MAP[finalMimeType] || '.jpg';
+    // Clean mime type of parameters (e.g. "audio/ogg; codecs=opus" -> "audio/ogg")
+    const cleanFinalMime = finalMimeType ? finalMimeType.split(';')[0].trim().toLowerCase() : '';
+    const ext = MIME_EXTENSION_MAP[cleanFinalMime] || MIME_EXTENSION_MAP[finalMimeType] || '.bin';
     const filename = `${mediaId}${ext}`;
     const outputPath = path.join(UPLOADS_DIR, filename);
     const relativePath = `/uploads/${filename}`;
@@ -139,12 +168,13 @@ async function downloadMedia(mediaId, directUrl = null, mimeType = null) {
     logger.error(`Failed to download media for ID ${mediaId}. Details: ${errorDetails}`);
     
     // In case of error but we are in dev/test, fallback to dummy image
-    const filename = `${mediaId}.png`;
+    const ext = categoryExtensions[mediaCategory];
+    const filename = `${mediaId}${ext}`;
     const outputPath = path.join(UPLOADS_DIR, filename);
-    const dummyImageBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const base64Content = dummyBinaries[mediaCategory];
     try {
-      fs.writeFileSync(outputPath, Buffer.from(dummyImageBase64, 'base64'));
-      logger.info(`Created fallback dummy image at ${outputPath} due to download error.`);
+      fs.writeFileSync(outputPath, Buffer.from(base64Content, 'base64'));
+      logger.info(`Created fallback dummy ${mediaCategory} at ${outputPath} due to download error.`);
       return `/uploads/${filename}`;
     } catch (writeErr) {
       return null;

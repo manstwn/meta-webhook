@@ -78,6 +78,10 @@ async function processPayloadAsync(body) {
             bodyText = msg.text.body;
           } else if (type === 'image' && msg.image) {
             bodyText = msg.image.caption || '';
+          } else if (type === 'video' && msg.video) {
+            bodyText = msg.video.caption || '';
+          } else if (type === 'audio' && msg.audio) {
+            bodyText = msg.audio.voice ? '[Voice Note]' : '[Audio]';
           }
 
           logger.info(`Incoming Message - ID: ${msgId}, From: ${from}, Type: ${type}, Body: "${bodyText}", Timestamp: ${timestamp}`);
@@ -98,7 +102,7 @@ async function processPayloadAsync(body) {
             logger.error(`Failed to save message ${msgId} to JSON storage:`, saveErr);
           }
 
-          // 1.5. Asynchronously download image media in the background if applicable
+          // 1.5. Asynchronously download media (image, video, audio) in the background if applicable
           if (type === 'image' && msg.image && msg.image.id) {
             whatsappService.downloadMedia(msg.image.id, msg.image.url, msg.image.mime_type)
               .then(localPath => {
@@ -108,6 +112,26 @@ async function processPayloadAsync(body) {
               })
               .catch(downloadErr => {
                 logger.error(`Failed to download image asynchronously for message ${msgId}:`, downloadErr);
+              });
+          } else if (type === 'video' && msg.video && msg.video.id) {
+            whatsappService.downloadMedia(msg.video.id, msg.video.url, msg.video.mime_type)
+              .then(localPath => {
+                if (localPath) {
+                  storage.updateMessage(msgId, { mediaPath: localPath });
+                }
+              })
+              .catch(downloadErr => {
+                logger.error(`Failed to download video asynchronously for message ${msgId}:`, downloadErr);
+              });
+          } else if (type === 'audio' && msg.audio && msg.audio.id) {
+            whatsappService.downloadMedia(msg.audio.id, msg.audio.url, msg.audio.mime_type)
+              .then(localPath => {
+                if (localPath) {
+                  storage.updateMessage(msgId, { mediaPath: localPath });
+                }
+              })
+              .catch(downloadErr => {
+                logger.error(`Failed to download audio asynchronously for message ${msgId}:`, downloadErr);
               });
           }
 
