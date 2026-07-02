@@ -630,11 +630,25 @@
           <option value="sent">Sent</option>
           <option value="replied">Replied</option>
         </select>
+        <button class="btn btn-secondary" onclick="fetchMessages()" title="Refresh messages list" style="padding: 0.6rem 1rem;">
+          <svg style="width:16px; height:16px; fill:currentColor; margin-right:0.25rem;" viewBox="0 0 24 24">
+            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+          </svg>
+          Refresh
+        </button>
       </div>
-      <button class="btn" onclick="openCreateModal()">
-        <svg style="width:16px; height:16px; fill:currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-        Create Message
-      </button>
+      <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-danger" onclick="openDeleteAllModal()" title="Clear all message logs" style="background: var(--accent-danger);">
+          <svg style="width:16px; height:16px; fill:currentColor; margin-right:0.25rem;" viewBox="0 0 24 24">
+            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/>
+          </svg>
+          Delete All
+        </button>
+        <button class="btn" onclick="openCreateModal()">
+          <svg style="width:16px; height:16px; fill:currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          Create Message
+        </button>
+      </div>
     </section>
 
     <!-- Table Container -->
@@ -779,6 +793,32 @@
       </div>
       <div class="modal-footer" style="padding: 1rem 1.5rem;">
         <button class="btn btn-secondary" onclick="closeModal('previewModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete All Confirmation Modal -->
+  <div id="deleteAllModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 450px;">
+      <div class="modal-header" style="border-bottom-color: rgba(239, 68, 68, 0.2);">
+        <h3 style="color: var(--accent-danger); display: flex; align-items: center; gap: 0.5rem;">
+          <svg style="width:20px; height:20px; fill:currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+          Danger Area: Delete All Logs
+        </h3>
+        <button class="btn-close" onclick="closeModal('deleteAllModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 1.25rem; font-size: 0.95rem; line-height: 1.5; color: #cbd5e1;">
+          This action will permanently delete all message logs from the database. This cannot be undone.
+        </p>
+        <div class="form-group">
+          <label for="deleteAllVerification" style="color: var(--text-main); font-weight: 500;">Type <b style="color: var(--accent-danger); font-family: monospace;">DELETE ALL</b> to confirm:</label>
+          <input type="text" id="deleteAllVerification" class="form-control" placeholder="DELETE ALL" autocomplete="off" style="text-transform: uppercase;">
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: 1rem 1.5rem;">
+        <button class="btn btn-secondary" onclick="closeModal('deleteAllModal')">Cancel</button>
+        <button class="btn btn-danger" onclick="handleDeleteAll()">Confirm Delete All</button>
       </div>
     </div>
   </div>
@@ -1168,6 +1208,36 @@
       // Open the modal (unless quiet is true, which is used if audio play triggers it automatically)
       if (!quiet) {
         openModal('previewModal');
+      }
+    }
+
+    function openDeleteAllModal() {
+      const input = document.getElementById('deleteAllVerification');
+      if (input) input.value = '';
+      openModal('deleteAllModal');
+    }
+
+    async function handleDeleteAll() {
+      const input = document.getElementById('deleteAllVerification');
+      if (!input || input.value.trim().toUpperCase() !== 'DELETE ALL') {
+        showToast('Verification word mismatch', 'danger');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/messages', {
+          method: 'DELETE',
+          headers: { ...getAuthHeader() }
+        });
+
+        await handleResponse(response);
+
+        showToast('All message logs deleted successfully', 'success');
+        closeModal('deleteAllModal');
+        fetchMessages();
+      } catch (err) {
+        showToast('Failed to delete all message logs', 'danger');
+        console.error(err);
       }
     }
 

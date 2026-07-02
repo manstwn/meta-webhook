@@ -141,6 +141,7 @@ function deleteMessage(id) {
 
 module.exports = {
   readMessages,
+  writeMessagesSafely,
   saveMessage,
   updateMessage,
   deleteMessage

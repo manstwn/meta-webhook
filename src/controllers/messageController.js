@@ -109,10 +109,26 @@ function deleteMessage(req, res) {
   }
 }
 
+/**
+ * DELETE /api/messages
+ * Remove all message records (Clear Database)
+ */
+function clearAllMessages(req, res) {
+  try {
+    storage.writeMessagesSafely([]);
+    logger.info('All message logs cleared from database.');
+    return res.status(200).json({ success: true, message: 'All messages deleted successfully.' });
+  } catch (error) {
+    logger.error('Error clearing messages database:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   getMessages,
   getMessageById,
   createMessage,
   updateMessage,
-  deleteMessage
+  deleteMessage,
+  clearAllMessages
 };

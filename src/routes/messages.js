@@ -21,4 +21,7 @@ router.put('/:id', messageController.updateMessage);
 // Delete a message
 router.delete('/:id', messageController.deleteMessage);
 
+// Delete all messages (Clear database)
+router.delete('/', messageController.clearAllMessages);
+
 module.exports = router;
