@@ -185,41 +185,37 @@ async function processPayloadAsync(body, req) {
             logger.error(`Failed to save message ${msgId} to JSON storage:`, saveErr);
           }
 
-          // Forward webhook payload to external domain asynchronously in background
-          forwardWebhook(messageRecord);
+          // 1.5. Download media first (if any) so the file exists before forwarding the URL
+          async function downloadThenForward() {
+            let localPath = null;
+            if (type === 'image' && msg.image && msg.image.id) {
+              try {
+                localPath = await whatsappService.downloadMedia(msg.image.id, msg.image.url, msg.image.mime_type);
+                if (localPath) storage.updateMessage(msgId, { mediaPath: localPath });
+              } catch (downloadErr) {
+                logger.error(`Failed to download image for message ${msgId}:`, downloadErr);
+              }
+            } else if (type === 'video' && msg.video && msg.video.id) {
+              try {
+                localPath = await whatsappService.downloadMedia(msg.video.id, msg.video.url, msg.video.mime_type);
+                if (localPath) storage.updateMessage(msgId, { mediaPath: localPath });
+              } catch (downloadErr) {
+                logger.error(`Failed to download video for message ${msgId}:`, downloadErr);
+              }
+            } else if (type === 'audio' && msg.audio && msg.audio.id) {
+              try {
+                localPath = await whatsappService.downloadMedia(msg.audio.id, msg.audio.url, msg.audio.mime_type);
+                if (localPath) storage.updateMessage(msgId, { mediaPath: localPath });
+              } catch (downloadErr) {
+                logger.error(`Failed to download audio for message ${msgId}:`, downloadErr);
+              }
+            }
 
-          // 1.5. Asynchronously download media (image, video, audio) in the background if applicable
-          if (type === 'image' && msg.image && msg.image.id) {
-            whatsappService.downloadMedia(msg.image.id, msg.image.url, msg.image.mime_type)
-              .then(localPath => {
-                if (localPath) {
-                  storage.updateMessage(msgId, { mediaPath: localPath });
-                }
-              })
-              .catch(downloadErr => {
-                logger.error(`Failed to download image asynchronously for message ${msgId}:`, downloadErr);
-              });
-          } else if (type === 'video' && msg.video && msg.video.id) {
-            whatsappService.downloadMedia(msg.video.id, msg.video.url, msg.video.mime_type)
-              .then(localPath => {
-                if (localPath) {
-                  storage.updateMessage(msgId, { mediaPath: localPath });
-                }
-              })
-              .catch(downloadErr => {
-                logger.error(`Failed to download video asynchronously for message ${msgId}:`, downloadErr);
-              });
-          } else if (type === 'audio' && msg.audio && msg.audio.id) {
-            whatsappService.downloadMedia(msg.audio.id, msg.audio.url, msg.audio.mime_type)
-              .then(localPath => {
-                if (localPath) {
-                  storage.updateMessage(msgId, { mediaPath: localPath });
-                }
-              })
-              .catch(downloadErr => {
-                logger.error(`Failed to download audio asynchronously for message ${msgId}:`, downloadErr);
-              });
+            // Forward webhook payload to external domain after media is ready
+            forwardWebhook(messageRecord);
           }
+
+          downloadThenForward();
 
           // 2. Trigger Auto Reply Logic asynchronously in the background
           if (type === 'text' && bodyText.trim().toLowerCase() === 'hi') {
