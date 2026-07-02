@@ -2,6 +2,8 @@ const config = require('../config/env');
 const logger = require('../middleware/logger');
 const whatsappService = require('../services/whatsapp');
 const storage = require('../utils/storage');
+const axios = require('axios');
+const cryptoHelper = require('../utils/cryptoHelper');
 
 /**
  * Handle Meta webhook verification (GET request)
@@ -29,6 +31,32 @@ function verifyWebhook(req, res) {
 }
 
 /**
+ * Forward parsed webhook message to external domain
+ */
+async function forwardWebhook(msgRecord) {
+  const forwardUrl = process.env.FORWARD_URL;
+  if (!forwardUrl) return;
+
+  try {
+    const payload = {
+      id: msgRecord.id,
+      from: msgRecord.from,
+      type: msgRecord.type,
+      body: msgRecord.body,
+      timestamp: msgRecord.timestamp,
+      tempMediaUrl: msgRecord.tempMediaUrl || null,
+      rawData: msgRecord.rawData
+    };
+
+    logger.info(`Forwarding message ${msgRecord.id} to external URL: ${forwardUrl}`);
+    await axios.post(forwardUrl, payload, { timeout: 5000 });
+    logger.info(`Successfully forwarded message ${msgRecord.id} to ${forwardUrl}`);
+  } catch (err) {
+    logger.error(`Failed to forward message ${msgRecord.id} to ${forwardUrl}:`, err.message);
+  }
+}
+
+/**
  * Handle incoming Meta webhook events (POST request)
  */
 function handleWebhook(req, res) {
@@ -36,7 +64,7 @@ function handleWebhook(req, res) {
   res.status(200).json({ status: 'success' });
 
   // Process the webhook payload asynchronously
-  processPayloadAsync(req.body).catch(err => {
+  processPayloadAsync(req.body, req).catch(err => {
     logger.error('Error processing webhook payload asynchronously:', err);
   });
 }
@@ -44,7 +72,7 @@ function handleWebhook(req, res) {
 /**
  * Helper to process the payload asynchronously
  */
-async function processPayloadAsync(body) {
+async function processPayloadAsync(body, req) {
   logger.info(`Processing webhook event: ${JSON.stringify(body)}`);
 
   const entries = body.entry;
@@ -86,21 +114,46 @@ async function processPayloadAsync(body) {
 
           logger.info(`Incoming Message - ID: ${msgId}, From: ${from}, Type: ${type}, Body: "${bodyText}", Timestamp: ${timestamp}`);
 
+          // Construct temporary signed expiring media URL if applicable
+          let tempMediaUrl = null;
+          if (type === 'image' && msg.image && msg.image.id) {
+            const ext = whatsappService.MIME_EXTENSION_MAP[msg.image.mime_type] || '.jpg';
+            const filePath = `public/uploads/${msg.image.id}${ext}`;
+            const token = cryptoHelper.generateTempToken(filePath);
+            tempMediaUrl = `${req.protocol}://${req.get('host')}/api/messages/temp-media/${token}`;
+          } else if (type === 'video' && msg.video && msg.video.id) {
+            const ext = whatsappService.MIME_EXTENSION_MAP[msg.video.mime_type] || '.mp4';
+            const filePath = `public/uploads/${msg.video.id}${ext}`;
+            const token = cryptoHelper.generateTempToken(filePath);
+            tempMediaUrl = `${req.protocol}://${req.get('host')}/api/messages/temp-media/${token}`;
+          } else if (type === 'audio' && msg.audio && msg.audio.id) {
+            const ext = whatsappService.MIME_EXTENSION_MAP[msg.audio.mime_type] || '.ogg';
+            const filePath = `public/uploads/${msg.audio.id}${ext}`;
+            const token = cryptoHelper.generateTempToken(filePath);
+            tempMediaUrl = `${req.protocol}://${req.get('host')}/api/messages/temp-media/${token}`;
+          }
+
           // 1. Save incoming message metadata safely in JSON store first
+          const messageRecord = {
+            id: msgId,
+            from: from,
+            body: bodyText,
+            type: type,
+            timestamp: parseInt(timestamp, 10) || Math.floor(Date.now() / 1000),
+            status: 'received',
+            replied: false,
+            tempMediaUrl: tempMediaUrl,
+            rawData: body
+          };
+
           try {
-            storage.saveMessage({
-              id: msgId,
-              from: from,
-              body: bodyText,
-              type: type,
-              timestamp: parseInt(timestamp, 10) || Math.floor(Date.now() / 1000),
-              status: 'received',
-              replied: false,
-              rawData: body
-            });
+            storage.saveMessage(messageRecord);
           } catch (saveErr) {
             logger.error(`Failed to save message ${msgId} to JSON storage:`, saveErr);
           }
+
+          // Forward webhook payload to external domain asynchronously in background
+          forwardWebhook(messageRecord);
 
           // 1.5. Asynchronously download media (image, video, audio) in the background if applicable
           if (type === 'image' && msg.image && msg.image.id) {

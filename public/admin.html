@@ -647,8 +647,20 @@
       </div>
     </header>
 
-    <!-- Controls Panel -->
-    <section class="controls-panel">
+    <!-- Tabs Navigation -->
+    <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.75rem;">
+      <button class="btn" id="tabBtnLogs" onclick="switchTab('logs')" style="padding: 0.5rem 1.1rem; border-radius: 6px; font-size: 0.85rem; background: var(--accent-primary); border: none;">
+        Message Logs Database
+      </button>
+      <button class="btn btn-secondary" id="tabBtnDocs" onclick="switchTab('docs')" style="padding: 0.5rem 1.1rem; border-radius: 6px; font-size: 0.85rem; background: transparent; border: 1px solid var(--glass-border);">
+        Webhook Forwarding API Docs
+      </button>
+    </div>
+
+    <!-- Logs Database Tab Content -->
+    <div id="logsTabContent">
+      <!-- Controls Panel -->
+      <section class="controls-panel">
       <div class="search-filter-group">
         <input type="text" id="searchInput" class="input-control search-input" placeholder="Search by WA ID or message content...">
         <select id="statusFilter" class="input-control">
@@ -732,6 +744,49 @@
       </div>
 
     </main>
+    </div> <!-- End of logsTabContent -->
+
+    <!-- Webhook Forwarding API Documentation Tab Content -->
+    <div id="docsTabContent" style="display: none; animation: fadeIn 0.3s forwards;">
+      <section class="card" style="padding: 2.25rem; background: rgba(15, 23, 42, 0.45); border-radius: 16px; border: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 1.75rem;">
+        <div>
+          <h2 style="font-size: 1.6rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.65rem;">
+            <svg style="width:24px; height:24px; fill:#a78bfa" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            Webhook Forwarding & 10m Temporary Links Documentation
+          </h2>
+          <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin: 0;">
+            Configure your VPS instance to forward all incoming WhatsApp webhook payloads directly to your backend service in real-time, including secure, tamper-proof media download links that expire automatically after 10 minutes.
+          </p>
+        </div>
+
+        <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+          <h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 0.75rem; font-weight: 600;">1. Configuration via .env</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 0.75rem;">
+            Add the <code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #f87171;">FORWARD_URL</code> variable inside your VPS <code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #cbd5e1;">.env</code> file:
+          </p>
+          <pre class="json-display" style="max-height: none; height: auto;">FORWARD_URL=https://your-domain.com/api/incoming-whatsapp-webhook</pre>
+        </div>
+
+        <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+          <h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 0.75rem; font-weight: 600;">2. Outgoing JSON Payload Format</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 0.75rem;">
+            When a message is received on the webhook, our VPS sends an HTTP POST request to your external server containing the following payload structure:
+          </p>
+          <pre id="payloadDocDisplay" class="json-display" style="max-height: none; height: auto; font-size: 0.8rem; overflow: auto; white-space: pre;"></pre>
+        </div>
+
+        <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+          <h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 0.75rem; font-weight: 600;">3. Handling Expiring Media Links</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 0.75rem;">
+            The <code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #fbbf24;">tempMediaUrl</code> property contains a cryptographically signed HMAC token pointing directly to the file served on the VPS. 
+          </p>
+          <ul style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0;">
+            <li><strong style="color: #fff;">Stateless Security:</strong> No database check is performed to load the media link. It validates the signature using the configured token secret.</li>
+            <li><strong style="color: #fff;">10-Minute Limit:</strong> If the link is accessed after 10 minutes, Express will automatically reject the download with a <code>410 Gone / Link Expired</code> code.</li>
+          </ul>
+        </div>
+      </section>
+    </div>
   </div>
 
   <!-- Create Modal -->
@@ -1374,6 +1429,7 @@
         mime_type: 'N/A',
         sha256: 'N/A',
         vps_local_path: msg.mediaPath || 'N/A',
+        temp_10m_link: msg.tempMediaUrl || 'N/A',
         meta_cdn_url: 'N/A',
         file_size: 'Fetching...'
       };
@@ -1600,6 +1656,75 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+    }
+
+    const docPayloadExample = {
+      id: "wamid.HBgNNjI4OTY0MzE4MDk2NhUCABIYFjNFQzAzQjUwMEEyNkQwRDFFQjg4NzIA",
+      from: "6289643180966",
+      type: "image",
+      body: "Caption text of the image",
+      timestamp: 1782983220,
+      tempMediaUrl: "https://your-vps-domain.com/api/messages/temp-media/eypayload.signature",
+      rawData: {
+        object: "whatsapp_business_account",
+        entry: [
+          {
+            id: "2497041524146595",
+            changes: [
+              {
+                value: {
+                  messaging_product: "whatsapp",
+                  messages: [
+                    {
+                      from: "6289643180966",
+                      id: "wamid.HBgNNjI4OTY0MzE4MDk2NhUCABIYFjNFQzAzQjUwMEEyNkQwRDFFQjg4NzIA",
+                      timestamp: "1782983220",
+                      type: "image",
+                      image: {
+                        mime_type: "image/jpeg",
+                        sha256: "/fl4mNJT7CF9VeIf70wH9rMsKaEeBABubFIHhM70tWg=",
+                        id: "1036717875441765"
+                      }
+                    }
+                  ]
+                },
+                field: "messages"
+              }
+            ]
+          }
+        ]
+      }
+    };
+
+    function switchTab(tabId) {
+      const logsTab = document.getElementById('logsTabContent');
+      const docsTab = document.getElementById('docsTabContent');
+      const tabBtnLogs = document.getElementById('tabBtnLogs');
+      const tabBtnDocs = document.getElementById('tabBtnDocs');
+
+      if (!logsTab || !docsTab || !tabBtnLogs || !tabBtnDocs) return;
+
+      if (tabId === 'logs') {
+        logsTab.style.display = 'block';
+        docsTab.style.display = 'none';
+        tabBtnLogs.style.background = 'var(--accent-primary)';
+        tabBtnLogs.style.border = 'none';
+        tabBtnDocs.style.background = 'transparent';
+        tabBtnDocs.style.border = '1px solid var(--glass-border)';
+      } else {
+        logsTab.style.display = 'none';
+        docsTab.style.display = 'block';
+        tabBtnLogs.style.background = 'transparent';
+        tabBtnLogs.style.border = '1px solid var(--glass-border)';
+        tabBtnDocs.style.background = 'var(--accent-primary)';
+        tabBtnDocs.style.border = 'none';
+        
+        // Populate and highlight example payload doc
+        const docEl = document.getElementById('payloadDocDisplay');
+        if (docEl && !docEl.innerHTML) {
+          docEl.innerHTML = syntaxHighlightJSON(docPayloadExample);
+        }
+      }
     }
   </script>
 </body>

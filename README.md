@@ -34,6 +34,7 @@ VERIFY_TOKEN=my_secret_verify_token
 WHATSAPP_TOKEN=YOUR_PERMANENT_ACCESS_TOKEN
 PHONE_NUMBER_ID=123456789012345
 APP_SECRET=YOUR_META_APP_SECRET (Optional, if omitted, signature checks are bypassed)
+FORWARD_URL=https://your-domain.com/api/incoming-whatsapp-webhook (Optional, destination URL for webhook forwarding)
 LOG_LEVEL=info
 ```
 
