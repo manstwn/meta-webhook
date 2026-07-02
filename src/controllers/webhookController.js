@@ -98,6 +98,19 @@ async function processPayloadAsync(body) {
             logger.error(`Failed to save message ${msgId} to JSON storage:`, saveErr);
           }
 
+          // 1.5. Asynchronously download image media in the background if applicable
+          if (type === 'image' && msg.image && msg.image.id) {
+            whatsappService.downloadMedia(msg.image.id)
+              .then(localPath => {
+                if (localPath) {
+                  storage.updateMessage(msgId, { mediaPath: localPath });
+                }
+              })
+              .catch(downloadErr => {
+                logger.error(`Failed to download image asynchronously for message ${msgId}:`, downloadErr);
+              });
+          }
+
           // 2. Trigger Auto Reply Logic asynchronously in the background
           if (type === 'text' && bodyText.trim().toLowerCase() === 'hi') {
             whatsappService.sendTextMessage(from, 'Halo')

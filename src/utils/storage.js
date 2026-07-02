@@ -74,6 +74,7 @@ function saveMessage(msgData) {
     timestamp: msgData.timestamp || Math.floor(Date.now() / 1000),
     status: msgData.status || 'received',
     replied: msgData.replied || false,
+    mediaPath: msgData.mediaPath || null,
     createdAt: new Date().toISOString(),
     notes: msgData.notes || ''
   };

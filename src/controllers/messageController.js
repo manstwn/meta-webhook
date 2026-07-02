@@ -44,7 +44,7 @@ function getMessageById(req, res) {
  */
 function createMessage(req, res) {
   try {
-    const { from, body, type, status, notes } = req.body;
+    const { from, body, type, status, notes, mediaPath } = req.body;
     
     if (!from || (type !== 'image' && !body)) {
       return res.status(400).json({ error: 'Missing required fields: from and body' });
@@ -55,7 +55,8 @@ function createMessage(req, res) {
       body: body || '',
       type: type || 'text',
       status: status || 'received',
-      notes: notes || ''
+      notes: notes || '',
+      mediaPath: mediaPath || null
     });
     
     return res.status(201).json(saved);
