@@ -1058,7 +1058,8 @@
       const msg = messages.find(m => m.id === id);
       if (!msg) return;
 
-      document.getElementById('jsonPayloadDisplay').textContent = JSON.stringify(msg, null, 2);
+      const payloadToDisplay = msg.rawData || msg;
+      document.getElementById('jsonPayloadDisplay').textContent = JSON.stringify(payloadToDisplay, null, 2);
       openModal('viewModal');
     }
 

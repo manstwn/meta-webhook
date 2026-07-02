@@ -75,6 +75,7 @@ function saveMessage(msgData) {
     status: msgData.status || 'received',
     replied: msgData.replied || false,
     mediaPath: msgData.mediaPath || null,
+    rawData: msgData.rawData || null,
     createdAt: new Date().toISOString(),
     notes: msgData.notes || ''
   };
