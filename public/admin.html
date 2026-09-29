@@ -648,7 +648,7 @@
     </header>
 
     <!-- Tabs Navigation -->
-    <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.75rem;">
+    <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.75rem; flex-wrap: wrap;">
       <button class="btn" id="tabBtnLogs" onclick="switchTab('logs')" style="padding: 0.5rem 1.1rem; border-radius: 6px; font-size: 0.85rem; background: var(--accent-primary); border: none;">
         Message Logs Database
       </button>
@@ -657,6 +657,9 @@
       </button>
       <button class="btn btn-secondary" id="tabBtnDomains" onclick="switchTab('domains')" style="padding: 0.5rem 1.1rem; border-radius: 6px; font-size: 0.85rem; background: transparent; border: 1px solid var(--glass-border);">
         Forward Targets CRUD
+      </button>
+      <button class="btn btn-secondary" id="tabBtnSendDocs" onclick="switchTab('sendDocs')" style="padding: 0.5rem 1.1rem; border-radius: 6px; font-size: 0.85rem; background: transparent; border: 1px solid var(--glass-border);">
+        Send Message API Docs
       </button>
     </div>
 
@@ -829,6 +832,215 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- Send Message API Documentation Tab Content -->
+    <div id="sendDocsTabContent" style="display: none; animation: fadeIn 0.3s forwards;">
+      <section class="card" style="padding: 2.25rem; background: rgba(15, 23, 42, 0.45); border-radius: 16px; border: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 1.75rem;">
+        <div>
+          <h2 style="font-size: 1.6rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.65rem;">
+            <svg style="width:24px; height:24px; fill:#10b981" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            Outbound Send Message API Documentation
+          </h2>
+          <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin: 0;">
+            Send WhatsApp text messages and media attachments (images, videos, audio, documents, and files) directly through this gateway using your configured API Key.
+          </p>
+        </div>
+
+        <!-- 1. Endpoint & Authentication -->
+        <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+          <h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 0.75rem; font-weight: 600;">1. Endpoint &amp; Authentication</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 0.75rem;">
+            All outbound requests must be sent as an HTTP <code>POST</code> request and authenticated with your <code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #38bdf8;">API_KEY</code>.
+          </p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; padding: 1rem;">
+              <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600;">Endpoint URL</span>
+              <div style="font-family: monospace; font-size: 0.95rem; color: #34d399; margin-top: 0.25rem;">POST /api/messages/send</div>
+            </div>
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; padding: 1rem;">
+              <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600;">Required Auth Header</span>
+              <div style="font-family: monospace; font-size: 0.95rem; color: #38bdf8; margin-top: 0.25rem;">x-api-key: YOUR_API_KEY</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">Or: Authorization: Bearer YOUR_API_KEY</div>
+            </div>
+          </div>
+          <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin: 0;">
+            Configure <code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #cbd5e1;">API_KEY=your_secret_key</code> in your server's <code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #cbd5e1;">.env</code> file. (The configured <code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #cbd5e1;">ADMIN_PIN</code> is also accepted).
+          </p>
+        </div>
+
+        <!-- 2. Request Parameters -->
+        <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+          <h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 0.75rem; font-weight: 600;">2. Request Payload Parameters</h3>
+          <div style="overflow-x: auto; border: 1px solid var(--glass-border); border-radius: 12px; background: rgba(0,0,0,0.2);">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--glass-border); background: rgba(255,255,255,0.02);">
+                  <th style="padding: 0.75rem 1rem; color: #fff; font-weight: 600;">Field</th>
+                  <th style="padding: 0.75rem 1rem; color: #fff; font-weight: 600;">Type</th>
+                  <th style="padding: 0.75rem 1rem; color: #fff; font-weight: 600;">Required?</th>
+                  <th style="padding: 0.75rem 1rem; color: #fff; font-weight: 600;">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                  <td style="padding: 0.75rem 1rem; font-family: monospace; color: #38bdf8;">to</td>
+                  <td style="padding: 0.75rem 1rem; color: var(--text-muted);">string</td>
+                  <td style="padding: 0.75rem 1rem;"><span style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">Required</span></td>
+                  <td style="padding: 0.75rem 1rem; color: #cbd5e1;">Recipient phone number with country code, no "+" or dashes (e.g. <code>6281234567890</code>).</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                  <td style="padding: 0.75rem 1rem; font-family: monospace; color: #38bdf8;">text / body</td>
+                  <td style="padding: 0.75rem 1rem; color: var(--text-muted);">string</td>
+                  <td style="padding: 0.75rem 1rem;"><span style="color: var(--text-muted); font-size: 0.75rem;">Conditional</span></td>
+                  <td style="padding: 0.75rem 1rem; color: #cbd5e1;">Message content for text messages. Required if sending plain text.</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                  <td style="padding: 0.75rem 1rem; font-family: monospace; color: #38bdf8;">type</td>
+                  <td style="padding: 0.75rem 1rem; color: var(--text-muted);">string</td>
+                  <td style="padding: 0.75rem 1rem;"><span style="color: var(--text-muted); font-size: 0.75rem;">Optional</span></td>
+                  <td style="padding: 0.75rem 1rem; color: #cbd5e1;"><code>text</code>, <code>image</code>, <code>video</code>, <code>audio</code>, or <code>document</code>. Auto-detected from file extension if omitted.</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                  <td style="padding: 0.75rem 1rem; font-family: monospace; color: #38bdf8;">link / url</td>
+                  <td style="padding: 0.75rem 1rem; color: var(--text-muted);">string</td>
+                  <td style="padding: 0.75rem 1rem;"><span style="color: var(--text-muted); font-size: 0.75rem;">Conditional</span></td>
+                  <td style="padding: 0.75rem 1rem; color: #cbd5e1;">Publicly accessible HTTPS URL of the media file or document to attach.</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                  <td style="padding: 0.75rem 1rem; font-family: monospace; color: #38bdf8;">mediaId / id</td>
+                  <td style="padding: 0.75rem 1rem; color: var(--text-muted);">string</td>
+                  <td style="padding: 0.75rem 1rem;"><span style="color: var(--text-muted); font-size: 0.75rem;">Optional</span></td>
+                  <td style="padding: 0.75rem 1rem; color: #cbd5e1;">Pre-uploaded Meta Graph Media ID (alternative to direct URL link).</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                  <td style="padding: 0.75rem 1rem; font-family: monospace; color: #38bdf8;">caption</td>
+                  <td style="padding: 0.75rem 1rem; color: var(--text-muted);">string</td>
+                  <td style="padding: 0.75rem 1rem;"><span style="color: var(--text-muted); font-size: 0.75rem;">Optional</span></td>
+                  <td style="padding: 0.75rem 1rem; color: #cbd5e1;">Caption text displayed below images, videos, and documents.</td>
+                </tr>
+                <tr>
+                  <td style="padding: 0.75rem 1rem; font-family: monospace; color: #38bdf8;">filename</td>
+                  <td style="padding: 0.75rem 1rem; color: var(--text-muted);">string</td>
+                  <td style="padding: 0.75rem 1rem;"><span style="color: var(--text-muted); font-size: 0.75rem;">Optional</span></td>
+                  <td style="padding: 0.75rem 1rem; color: #cbd5e1;">Custom filename for documents (e.g. <code>Monthly_Report_2026.pdf</code>). Auto-extracted from URL if omitted.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3. Usage Examples -->
+        <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+          <h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 0.75rem; font-weight: 600;">3. Ready-to-Use cURL Examples</h3>
+          
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <!-- Example A: Text -->
+            <div>
+              <div style="font-weight: 600; color: #38bdf8; font-size: 0.9rem; margin-bottom: 0.35rem;">A. Send Plain Text Message</div>
+              <pre class="json-display" style="max-height: none; height: auto; font-size: 0.8rem; overflow: auto; white-space: pre;">curl -X POST https://your-domain.com/api/messages/send \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{
+    "to": "6281234567890",
+    "text": "Hello! Your appointment is confirmed for tomorrow."
+  }'</pre>
+            </div>
+
+            <!-- Example B: Document/PDF -->
+            <div>
+              <div style="font-weight: 600; color: #a78bfa; font-size: 0.9rem; margin-bottom: 0.35rem;">B. Send Document / PDF / File Attachment</div>
+              <pre class="json-display" style="max-height: none; height: auto; font-size: 0.8rem; overflow: auto; white-space: pre;">curl -X POST https://your-domain.com/api/messages/send \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{
+    "to": "6281234567890",
+    "type": "document",
+    "link": "https://example.com/files/invoice_1092.pdf",
+    "filename": "Invoice_1092.pdf",
+    "caption": "Please find attached your invoice document."
+  }'</pre>
+            </div>
+
+            <!-- Example C: Image / Photo -->
+            <div>
+              <div style="font-weight: 600; color: #34d399; font-size: 0.9rem; margin-bottom: 0.35rem;">C. Send Image with Caption</div>
+              <pre class="json-display" style="max-height: none; height: auto; font-size: 0.8rem; overflow: auto; white-space: pre;">curl -X POST https://your-domain.com/api/messages/send \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{
+    "to": "6281234567890",
+    "type": "image",
+    "link": "https://example.com/images/product-banner.png",
+    "caption": "Check out our newest catalog release!"
+  }'</pre>
+            </div>
+
+            <!-- Example D: Video or Audio -->
+            <div>
+              <div style="font-weight: 600; color: #f59e0b; font-size: 0.9rem; margin-bottom: 0.35rem;">D. Send Video / Audio Voice Clip</div>
+              <pre class="json-display" style="max-height: none; height: auto; font-size: 0.8rem; overflow: auto; white-space: pre;">curl -X POST https://your-domain.com/api/messages/send \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{
+    "to": "6281234567890",
+    "type": "video",
+    "link": "https://example.com/videos/onboarding-guide.mp4",
+    "caption": "Watch this 1-minute setup tutorial"
+  }'</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Success Response Format -->
+        <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+          <h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 0.75rem; font-weight: 600;">4. Success Response (HTTP 200 OK)</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 0.75rem;">
+            When Meta successfully accepts the message for delivery, the gateway responds with the official Meta Message ID (<code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #34d399;">wamid</code>) and logs the record in the local database:
+          </p>
+          <pre class="json-display" style="max-height: none; height: auto; font-size: 0.8rem; overflow: auto; white-space: pre;">{
+  "success": true,
+  "messageId": "wamid.HBgLMjA4MDk5ODk5NxUCMRIAFkExQjJDM0Q0RTVGNkE3QjhDOTAwAA==",
+  "type": "document",
+  "recipient": "6281234567890",
+  "record": {
+    "id": "wamid.HBgLMjA4MDk5ODk5NxUCMRIAFkExQjJDM0Q0RTVGNkE3QjhDOTAwAA==",
+    "from": "me",
+    "body": "Please find attached your invoice document.",
+    "type": "document",
+    "status": "sent",
+    "mediaPath": "https://example.com/files/invoice_1092.pdf",
+    "notes": "Sent to 6281234567890",
+    "createdAt": "2026-09-29T10:00:00.000Z"
+  }
+}</pre>
+        </div>
+
+        <!-- 5. Error Responses & Failure Handling -->
+        <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+          <h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 0.75rem; font-weight: 600;">5. Error Handling &amp; Attachment Failures</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 0.75rem;">
+            If an attachment link is broken (404), unreachable, or Meta Graph API rejects the file format or payload, an error response is returned with the exact rejection details:
+          </p>
+          <pre class="json-display" style="max-height: none; height: auto; font-size: 0.8rem; overflow: auto; white-space: pre; border-color: rgba(239, 68, 68, 0.3);">{
+  "success": false,
+  "error": "(#100) Param link failed to validate: URL is not reachable",
+  "details": {
+    "error": {
+      "message": "(#100) Param link failed to validate: URL is not reachable",
+      "type": "OAuthException",
+      "code": 100,
+      "fbtrace_id": "A4B7C9D1E2F3"
+    }
+  }
+}</pre>
+          <ul style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.75rem;">
+            <li><strong style="color: #f87171;">401 Unauthorized:</strong> Missing or incorrect <code>x-api-key</code> or Bearer token.</li>
+            <li><strong style="color: #f87171;">400 Bad Request:</strong> Missing required <code>to</code> number, missing media link, or unsupported media type.</li>
+            <li><strong style="color: #f87171;">500 / Meta Error:</strong> Meta Cloud API rejected the media URL, access token expired, or phone number ID invalid.</li>
+          </ul>
         </div>
       </section>
     </div>
@@ -1941,14 +2153,16 @@
       const logsTab = document.getElementById('logsTabContent');
       const docsTab = document.getElementById('docsTabContent');
       const domainsTab = document.getElementById('domainsTabContent');
+      const sendDocsTab = document.getElementById('sendDocsTabContent');
       const tabBtnLogs = document.getElementById('tabBtnLogs');
       const tabBtnDocs = document.getElementById('tabBtnDocs');
       const tabBtnDomains = document.getElementById('tabBtnDomains');
+      const tabBtnSendDocs = document.getElementById('tabBtnSendDocs');
 
       if (!logsTab || !docsTab || !domainsTab || !tabBtnLogs || !tabBtnDocs || !tabBtnDomains) return;
 
       // Reset all buttons to secondary style
-      [tabBtnLogs, tabBtnDocs, tabBtnDomains].forEach(btn => {
+      [tabBtnLogs, tabBtnDocs, tabBtnDomains, tabBtnSendDocs].filter(Boolean).forEach(btn => {
         btn.style.background = 'transparent';
         btn.style.border = '1px solid var(--glass-border)';
       });
@@ -1957,6 +2171,7 @@
       logsTab.style.display = 'none';
       docsTab.style.display = 'none';
       domainsTab.style.display = 'none';
+      if (sendDocsTab) sendDocsTab.style.display = 'none';
 
       if (tabId === 'logs') {
         logsTab.style.display = 'block';
@@ -1979,6 +2194,12 @@
         
         // Fetch domain targets list
         fetchDomains();
+      } else if (tabId === 'sendDocs') {
+        if (sendDocsTab) sendDocsTab.style.display = 'block';
+        if (tabBtnSendDocs) {
+          tabBtnSendDocs.style.background = 'var(--accent-primary)';
+          tabBtnSendDocs.style.border = 'none';
+        }
       }
     }
   </script>
