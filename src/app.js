@@ -33,12 +33,14 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Integrate morgan HTTP logger with Winston
-app.use(morgan('combined', {
-  stream: {
-    write: (message) => logger.info(message.trim())
-  }
-}));
+// Integrate morgan HTTP logger with Winston (enabled when LOG is not set to false)
+if (config.LOG !== false) {
+  app.use(morgan('combined', {
+    stream: {
+      write: (message) => logger.info(message.trim())
+    }
+  }));
+}
 
 // Parse incoming JSON body with raw body extraction (required for signature verification)
 // and limit size to 5MB (as specified in PRD)

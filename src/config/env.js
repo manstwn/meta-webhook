@@ -7,6 +7,7 @@ const config = {
   WHATSAPP_TOKEN: process.env.WHATSAPP_TOKEN,
   PHONE_NUMBER_ID: process.env.PHONE_NUMBER_ID,
   APP_SECRET: process.env.APP_SECRET || '',
+  LOG: process.env.LOG !== 'false',
   LOG_LEVEL: process.env.LOG_LEVEL || 'info',
   NODE_ENV: process.env.NODE_ENV || 'development',
   ADMIN_PIN: process.env.ADMIN_PIN || '123456',
