@@ -9,7 +9,8 @@ const config = {
   APP_SECRET: process.env.APP_SECRET || '',
   LOG_LEVEL: process.env.LOG_LEVEL || 'info',
   NODE_ENV: process.env.NODE_ENV || 'development',
-  ADMIN_PIN: process.env.ADMIN_PIN || '123456'
+  ADMIN_PIN: process.env.ADMIN_PIN || '123456',
+  API_KEY: process.env.API_KEY || ''
 };
 
 // Check for missing or placeholder environment variables and log warnings

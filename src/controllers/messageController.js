@@ -1,5 +1,6 @@
 const storage = require('../utils/storage');
 const logger = require('../middleware/logger');
+const whatsappService = require('../services/whatsapp');
 
 /**
  * GET /api/messages
@@ -124,11 +125,109 @@ function clearAllMessages(req, res) {
   }
 }
 
+/**
+ * POST /api/messages/send
+ * Outbound message sending endpoint for text and media (images, videos, documents, audio, attachments)
+ */
+async function sendMessage(req, res) {
+  try {
+    const { to, text, body, message, link, url, mediaUrl, fileUrl, mediaId, id, caption, filename } = req.body;
+    let type = (req.body.type || '').toLowerCase().trim();
+
+    if (!to) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: "to" (recipient WhatsApp phone number with country code, e.g. "6281234567890")'
+      });
+    }
+
+    const targetMedia = link || url || mediaUrl || fileUrl;
+    const targetMediaId = mediaId || (type !== 'text' && id ? id : null);
+    const contentText = text || body || message || '';
+
+    // Auto-detect type if not provided or generic
+    if (!type || ['media', 'file', 'attachment'].includes(type)) {
+      if (targetMedia || targetMediaId) {
+        type = whatsappService.detectMediaType(targetMedia);
+      } else {
+        type = 'text';
+      }
+    } else if (['doc', 'docs', 'pdf'].includes(type)) {
+      type = 'document';
+    }
+
+    let metaResponse;
+
+    if (type === 'text') {
+      if (!contentText) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing text content. Provide "text" or "body" field for text messages.'
+        });
+      }
+      metaResponse = await whatsappService.sendTextMessage(to, contentText);
+    } else if (['image', 'video', 'audio', 'document'].includes(type)) {
+      if (!targetMedia && !targetMediaId) {
+        return res.status(400).json({
+          success: false,
+          error: `Missing media attachment for type "${type}". Provide "link" (direct public URL) or "mediaId".`
+        });
+      }
+
+      metaResponse = await whatsappService.sendMediaMessage(to, type, {
+        link: targetMedia,
+        id: targetMediaId,
+        caption: caption || contentText,
+        filename: filename
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: `Unsupported message type: "${type}". Supported types: text, image, video, audio, document.`
+      });
+    }
+
+    const metaMsgId = metaResponse?.messages?.[0]?.id;
+
+    // Save outbound record to message storage
+    const saved = storage.saveMessage({
+      id: metaMsgId || `out_${Date.now()}`,
+      from: 'me',
+      body: contentText || caption || (targetMedia ? `[${type}: ${targetMedia}]` : `[${type}]`),
+      type: type,
+      status: 'sent',
+      mediaPath: targetMedia || null,
+      notes: `Sent to ${to}`
+    });
+
+    return res.status(200).json({
+      success: true,
+      messageId: metaMsgId,
+      type: type,
+      recipient: to,
+      record: saved
+    });
+  } catch (error) {
+    const errorDetails = error.details || (error.response ? error.response.data : error.message);
+    logger.error('Error sending message via WhatsApp Cloud API:', errorDetails);
+
+    const errorMessage = error.message || 'Failed to send WhatsApp message';
+    const statusCode = error.status || (error.response ? error.response.status : 500);
+
+    return res.status(statusCode >= 400 && statusCode < 600 ? statusCode : 500).json({
+      success: false,
+      error: errorMessage,
+      details: errorDetails
+    });
+  }
+}
+
 module.exports = {
   getMessages,
   getMessageById,
   createMessage,
   updateMessage,
   deleteMessage,
-  clearAllMessages
+  clearAllMessages,
+  sendMessage
 };

@@ -60,7 +60,107 @@ async function sendTextMessage(to, textBody) {
   } catch (error) {
     const errorDetails = error.response ? JSON.stringify(error.response.data) : error.message;
     logger.error(`Failed to send message to ${to}. Details: ${errorDetails}`);
+    const metaMessage = error.response?.data?.error?.message || error.message;
+    const err = new Error(metaMessage);
+    err.status = error.response?.status || 500;
+    err.details = error.response?.data || error.message;
+    throw err;
+  }
+}
+
+/**
+ * Detect media type category from filename or URL.
+ * @param {string} urlOrFilename
+ * @returns {string} 'image' | 'video' | 'audio' | 'document'
+ */
+function detectMediaType(urlOrFilename) {
+  if (!urlOrFilename || typeof urlOrFilename !== 'string') return 'document';
+  const clean = urlOrFilename.split('?')[0].toLowerCase();
+  const ext = path.extname(clean);
+  
+  const imageExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+  const videoExts = ['.mp4', '.3gp', '.mov'];
+  const audioExts = ['.mp3', '.ogg', '.wav', '.m4a', '.aac', '.amr'];
+
+  if (imageExts.includes(ext)) return 'image';
+  if (videoExts.includes(ext)) return 'video';
+  if (audioExts.includes(ext)) return 'audio';
+  return 'document';
+}
+
+/**
+ * Send media message (image, video, audio, document) via WhatsApp Cloud API.
+ * @param {string} to - Recipient phone number or WhatsApp ID.
+ * @param {string} mediaType - 'image' | 'video' | 'audio' | 'document'.
+ * @param {object} options - Media options { link, id, caption, filename }.
+ * @returns {Promise<object>} The API response data.
+ */
+async function sendMediaMessage(to, mediaType, options = {}) {
+  const url = `https://graph.facebook.com/v23.0/${config.PHONE_NUMBER_ID}/messages`;
+  
+  let type = (mediaType || '').toLowerCase().trim();
+  if (['doc', 'docs', 'pdf', 'file', 'attachment'].includes(type)) {
+    type = 'document';
+  }
+
+  const mediaObject = {};
+  if (options.id || options.mediaId) {
+    mediaObject.id = options.id || options.mediaId;
+  } else if (options.link || options.url) {
+    mediaObject.link = options.link || options.url;
+  } else {
+    const error = new Error('Media attachment requires either a valid public URL ("link") or Meta Media ID ("id")');
+    error.status = 400;
     throw error;
+  }
+
+  if (options.caption && ['image', 'video', 'document'].includes(type)) {
+    mediaObject.caption = options.caption;
+  }
+
+  if (type === 'document') {
+    if (options.filename) {
+      mediaObject.filename = options.filename;
+    } else if (mediaObject.link) {
+      try {
+        const parsed = new URL(mediaObject.link);
+        const base = path.basename(parsed.pathname);
+        if (base && base.includes('.')) mediaObject.filename = base;
+      } catch (e) {
+        // Ignore URL parse error
+      }
+    }
+  }
+
+  const payload = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: to,
+    type: type,
+    [type]: mediaObject
+  };
+
+  const headers = {
+    'Authorization': `Bearer ${config.WHATSAPP_TOKEN}`,
+    'Content-Type': 'application/json'
+  };
+
+  logger.info(`Sending ${type} message to ${to}`);
+
+  try {
+    const response = await axios.post(url, payload, { headers });
+    const msgId = response.data?.messages?.[0]?.id;
+    logger.info(`${type} sent successfully to ${to}. Message ID: ${msgId || 'unknown'}`);
+    return response.data;
+  } catch (error) {
+    const errorData = error.response?.data;
+    const metaMessage = errorData?.error?.message || error.message;
+    logger.error(`Failed to send ${type} to ${to}. Details: ${JSON.stringify(errorData || error.message)}`);
+    
+    const err = new Error(metaMessage || `Failed to send ${type} attachment`);
+    err.status = error.response?.status || 500;
+    err.details = errorData || error.message;
+    throw err;
   }
 }
 
@@ -184,6 +284,8 @@ async function downloadMedia(mediaId, directUrl = null, mimeType = null) {
 
 module.exports = {
   sendTextMessage,
+  sendMediaMessage,
+  detectMediaType,
   downloadMedia,
   MIME_EXTENSION_MAP
 };

@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const messageController = require('../controllers/messageController');
 const authenticatePIN = require('../middleware/auth');
+const authenticateApiKey = require('../middleware/apiKeyAuth');
 const cryptoHelper = require('../utils/cryptoHelper');
 
 // Serve temporary expiring media files (No PIN auth required, validated via signed token and access key)
@@ -50,6 +51,9 @@ router.get('/temp-media/:token', (req, res) => {
   
   res.sendFile(absolutePath);
 });
+
+// Outbound message sending endpoint (Protected by API Key or PIN)
+router.post('/send', authenticateApiKey, messageController.sendMessage);
 
 // Apply PIN authentication middleware to protect all CRUD endpoints
 router.use(authenticatePIN);
