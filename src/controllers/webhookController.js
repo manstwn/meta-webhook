@@ -31,6 +31,49 @@ function verifyWebhook(req, res) {
 }
 
 /**
+ * Check if sender phone number matches target phone filter
+ * Supports exact numbers, international formats, wildcards (62812*), digit masks (62812XXXX),
+ * and comma/newline-separated lists. Blank filter permits all numbers.
+ */
+function isPhoneAllowed(from, phoneFilter) {
+  if (!phoneFilter || !phoneFilter.trim()) return true;
+  if (!from) return false;
+
+  const fromDigits = String(from).replace(/\D/g, '');
+  if (!fromDigits) return false;
+
+  const rules = phoneFilter.split(/[,;\n\r]+/).map(r => r.trim()).filter(Boolean);
+  if (rules.length === 0) return true;
+
+  for (let rule of rules) {
+    let clean = rule.replace(/[\s+\-()]/g, '');
+
+    // Normalize Indonesian local format 08... to 628...
+    if (/^08\d+/.test(clean) || /^08[xX*]/.test(clean)) {
+      clean = '62' + clean.slice(1);
+    }
+
+    try {
+      const regexPattern = '^' + clean
+        .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+        .replace(/\*/g, '.*')
+        .replace(/[xX]/g, '\\d') + '$';
+
+      const regex = new RegExp(regexPattern);
+      if (regex.test(fromDigits)) {
+        return true;
+      }
+    } catch (e) {
+      if (fromDigits === clean || fromDigits.startsWith(clean.replace(/\*/g, ''))) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
  * Forward parsed webhook message to external domains (multicast)
  */
 async function forwardWebhook(msgRecord) {
@@ -48,7 +91,11 @@ async function forwardWebhook(msgRecord) {
 
   // Add static URL from environment if configured
   if (process.env.FORWARD_URL) {
-    targets.push({ url: process.env.FORWARD_URL, notes: 'Static environment target' });
+    targets.push({ 
+      url: process.env.FORWARD_URL, 
+      notes: 'Static environment target',
+      phoneFilter: process.env.FORWARD_PHONE_FILTER || ''
+    });
   }
 
   // Add dynamic target URLs from database (only enabled ones)
@@ -70,6 +117,12 @@ async function forwardWebhook(msgRecord) {
   // Relay payload to all target endpoints
   for (const target of targets) {
     try {
+      // Check phone number filter
+      if (target.phoneFilter && !isPhoneAllowed(msgRecord.from, target.phoneFilter)) {
+        logger.info(`Message ${msgRecord.id} from ${msgRecord.from} skipped for target ${target.url} due to phone filter: "${target.phoneFilter}"`);
+        continue;
+      }
+
       const targetPayload = { ...payload };
       const key = target.key || process.env.WHATSAPP_TOKEN;
       if (msgRecord.tempMediaUrl && key) {
@@ -292,5 +345,7 @@ async function processPayloadAsync(body, req) {
 
 module.exports = {
   verifyWebhook,
-  handleWebhook
+  handleWebhook,
+  forwardWebhook,
+  isPhoneAllowed
 };

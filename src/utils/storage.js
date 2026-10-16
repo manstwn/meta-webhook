@@ -178,7 +178,8 @@ function saveDomain(domain) {
   
   // Clean key or auto-generate a secure random string
   domain.key = domain.key && domain.key.trim() ? domain.key.trim() : `key_${Math.random().toString(36).substr(2, 9)}${Math.random().toString(36).substr(2, 6)}`;
-  
+  domain.phoneFilter = typeof domain.phoneFilter === 'string' ? domain.phoneFilter.trim() : '';
+
   if (index !== -1) {
     domains[index] = { ...domains[index], ...domain, updatedAt: new Date().toISOString() };
   } else {
@@ -189,7 +190,7 @@ function saveDomain(domain) {
   }
   
   writeDomainsSafely(domains);
-  return domain;
+  return index !== -1 ? domains[index] : domain;
 }
 
 function deleteDomain(id) {

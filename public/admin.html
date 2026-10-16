@@ -818,7 +818,8 @@
             <thead>
               <tr style="border-bottom: 1px solid var(--glass-border); background: rgba(255,255,255,0.02);">
                 <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff;">URL / Endpoint</th>
-                <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff; width: 120px;">Status</th>
+                <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff; width: 110px;">Status</th>
+                <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff; width: 160px;">Phone Filter</th>
                 <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff; width: 165px;">Media Access Key</th>
                 <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff;">Notes / Description</th>
                 <th style="padding: 1rem 1.25rem; font-weight: 600; color: #fff; width: 160px; text-align: right;">Actions</th>
@@ -826,7 +827,7 @@
             </thead>
             <tbody id="domainsTableBody">
               <tr>
-                <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">
                   Loading forwarding target domains...
                 </td>
               </tr>
@@ -1136,6 +1137,13 @@
           <div class="form-group">
             <label for="domainUrl">Target Endpoint URL</label>
             <input type="url" id="domainUrl" class="form-control" placeholder="https://example.com/endpoint" required>
+          </div>
+          <div class="form-group">
+            <label for="domainPhoneFilter">Phone Number Filter (Optional)</label>
+            <input type="text" id="domainPhoneFilter" class="form-control" placeholder="e.g. 6281234567890, 62812*, 62XXXXXX, 1415*">
+            <small style="color: var(--text-muted); font-size: 0.78rem; display: block; margin-top: 0.35rem; line-height: 1.4;">
+              Only matching incoming numbers will be forwarded to this target. Supports international numbers, comma-separated lists, wildcards (<code>62812*</code>), and digit masks (<code>62XXXXXX</code>). Leave blank to allow all numbers.
+            </small>
           </div>
           <div class="form-group">
             <label for="domainNotes">Notes / Description</label>
@@ -2012,7 +2020,7 @@
       if (domains.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+            <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">
               No forwarding target domains configured. Click "Add New Target" to configure one.
             </td>
           </tr>
@@ -2023,6 +2031,9 @@
       tbody.innerHTML = domains.map(d => {
         const badgeClass = d.enabled ? 'badge-received' : 'badge-replied';
         const badgeLabel = d.enabled ? 'Enabled' : 'Disabled';
+        const filterHtml = d.phoneFilter
+          ? `<span style="display: inline-block; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 2px 8px; border-radius: 6px; font-family: monospace; font-size: 0.78rem; word-break: break-all;">${escapeHtml(d.phoneFilter)}</span>`
+          : `<span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">All Numbers</span>`;
         
         return `
           <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
@@ -2032,6 +2043,7 @@
                 ${badgeLabel}
               </span>
             </td>
+            <td style="padding: 1rem 1.25rem;">${filterHtml}</td>
             <td style="padding: 1rem 1.25rem; font-family: monospace; color: #f59e0b; font-size: 0.8rem;">${escapeHtml(d.key || '-')}</td>
             <td style="padding: 1rem 1.25rem; color: var(--text-muted);">${escapeHtml(d.notes || '-')}</td>
             <td style="padding: 1rem 1.25rem; text-align: right;">
@@ -2059,6 +2071,7 @@
       form.reset();
       document.getElementById('domainId').value = '';
       document.getElementById('domainKey').value = '';
+      document.getElementById('domainPhoneFilter').value = '';
 
       if (id) {
         title.textContent = 'Edit Forwarding Target';
@@ -2066,6 +2079,7 @@
         if (d) {
           document.getElementById('domainId').value = d.id;
           document.getElementById('domainUrl').value = d.url;
+          document.getElementById('domainPhoneFilter').value = d.phoneFilter || '';
           document.getElementById('domainNotes').value = d.notes || '';
           document.getElementById('domainKey').value = d.key || '';
           document.getElementById('domainEnabled').checked = d.enabled;
@@ -2083,6 +2097,7 @@
       try {
         const id = document.getElementById('domainId').value;
         const url = document.getElementById('domainUrl').value;
+        const phoneFilter = document.getElementById('domainPhoneFilter').value;
         const notes = document.getElementById('domainNotes').value;
         const key = document.getElementById('domainKey').value;
         const enabled = document.getElementById('domainEnabled').checked;
@@ -2093,7 +2108,7 @@
             'Content-Type': 'application/json',
             ...getAuthHeader()
           },
-          body: JSON.stringify({ id: id || undefined, url, notes, key, enabled })
+          body: JSON.stringify({ id: id || undefined, url, phoneFilter, notes, key, enabled })
         });
 
         await handleResponse(res);

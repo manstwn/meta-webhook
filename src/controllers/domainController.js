@@ -21,13 +21,13 @@ function getDomains(req, res) {
  */
 function saveDomain(req, res) {
   try {
-    const { id, url, enabled, notes } = req.body;
+    const { id, url, enabled, notes, key, phoneFilter } = req.body;
     
     if (!url) {
       return res.status(400).json({ error: 'URL field is required' });
     }
     
-    const domainRecord = storage.saveDomain({ id, url, enabled, notes });
+    const domainRecord = storage.saveDomain({ id, url, enabled, notes, key, phoneFilter });
     logger.info(`Forwarding domain target saved successfully: ${domainRecord.url}`);
     return res.status(200).json(domainRecord);
   } catch (error) {

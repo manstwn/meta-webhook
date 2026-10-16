@@ -289,3 +289,35 @@ Deletes a message record from the local database file.
   curl -X DELETE http://localhost:2958/api/messages/wamid.mock_curl_message_id \
     -H "Authorization: Bearer 123456"
   ```
+
+---
+
+## Forwarding Target Domains API
+
+Endpoints under `/api/forward-urls` allow configuring real-time multicast relay targets for incoming WhatsApp messages with phone number filtering.
+
+### 9. List All Forward Targets
+* **URL:** `/api/forward-urls`
+* **Method:** `GET`
+* **Headers:** `Authorization: Bearer <PIN>`
+* **Response:** Array of forward target objects.
+
+### 10. Save or Update Forward Target
+* **URL:** `/api/forward-urls`
+* **Method:** `POST`
+* **Headers:**
+  * `Content-Type: application/json`
+  * `Authorization: Bearer <PIN>`
+* **Request Body:**
+  ```json
+  {
+    "url": "https://example.com/webhook",
+    "phoneFilter": "6281234567890, 62812*, 62XXXXXX, 1415*",
+    "notes": "CRM Webhook",
+    "enabled": true
+  }
+  ```
+* **Filter Rules:**
+  - `phoneFilter` supports exact numbers (`6281234567890`), international numbers (`+1 (415) 555-2671`), wildcards (`62812*`, `1*`), digit masks (`62XXXXXX`), or comma-separated lists.
+  - Leave empty/blank to forward all incoming messages.
+
