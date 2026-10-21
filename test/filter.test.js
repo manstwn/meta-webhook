@@ -52,4 +52,35 @@ const testDomain = storage.saveDomain({
 assert.strictEqual(testDomain.phoneFilter, '6281234567890, 62812*', 'Storage should retain phoneFilter');
 storage.deleteDomain(testDomain.id);
 
+// 10. Custom headers normalization
+assert.deepStrictEqual(
+  storage.normalizeHeaders({ 'x-api-key': 'abc123', 'Authorization': 'Bearer sk-xyz' }),
+  { 'x-api-key': 'abc123', 'Authorization': 'Bearer sk-xyz' },
+  'Object headers should be preserved'
+);
+
+const parsedHeaders = storage.normalizeHeaders('-H "x-api-key: abc123"\nAuthorization: Bearer sk-xyz\n\n');
+assert.strictEqual(parsedHeaders['x-api-key'], 'abc123', 'Header should parse from curl-style string');
+assert.strictEqual(parsedHeaders['Authorization'], 'Bearer sk-xyz', 'Colon inside value should be preserved');
+assert.strictEqual(Object.keys(parsedHeaders).length, 2, 'Blank lines should be ignored');
+
+assert.deepStrictEqual(
+  storage.normalizeHeaders({ 'X-Test': 'value\r\nInjected: evil' }),
+  { 'X-Test': 'valueInjected: evil' },
+  'CRLF should be stripped from header names/values'
+);
+
+assert.deepStrictEqual(storage.normalizeHeaders(''), {}, 'Blank header input should yield empty map');
+
+const headersDomain = storage.saveDomain({
+  url: 'https://test-headers-domain.com/webhook',
+  headers: 'x-api-key: abc123\nAuthorization: Bearer sk-xyz'
+});
+assert.deepStrictEqual(
+  headersDomain.headers,
+  { 'x-api-key': 'abc123', 'Authorization': 'Bearer sk-xyz' },
+  'Storage should retain normalized headers'
+);
+storage.deleteDomain(headersDomain.id);
+
 console.log('All phone filter tests passed successfully!');

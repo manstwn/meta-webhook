@@ -314,10 +314,17 @@ Endpoints under `/api/forward-urls` allow configuring real-time multicast relay 
     "url": "https://example.com/webhook",
     "phoneFilter": "6281234567890, 62812*, 62XXXXXX, 1415*",
     "notes": "CRM Webhook",
-    "enabled": true
+    "enabled": true,
+    "headers": {
+      "x-api-key": "XXXXXXXXXXXXX",
+      "Authorization": "Bearer sk-ALfyxxxxx"
+    }
   }
   ```
 * **Filter Rules:**
   - `phoneFilter` supports exact numbers (`6281234567890`), international numbers (`+1 (415) 555-2671`), wildcards (`62812*`, `1*`), digit masks (`62XXXXXX`), or comma-separated lists.
   - Leave empty/blank to forward all incoming messages.
+* **Custom Headers:**
+  - `headers` is an optional map of HTTP headers sent on every forwarded webhook POST to this target, letting any auth scheme pass through (`x-api-key`, `Authorization: Bearer ...`, or any custom header).
+  - A multi-line string (`"Header-Name: value"` per line, curl `-H` prefixes tolerated) is also accepted and is normalized to a map on save. Leave blank to send no extra headers.
 

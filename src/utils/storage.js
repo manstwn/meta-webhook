@@ -172,6 +172,42 @@ function writeDomainsSafely(domains) {
   }
 }
 
+/**
+ * Normalize custom request headers into a plain { name: value } object.
+ * Accepts either an object ({ 'x-api-key': 'abc' }) or a multi-line string where
+ * each line is "Header-Name: value" (a leading curl-style -H and surrounding
+ * quotes are tolerated). Invalid / CRLF-injected entries are dropped.
+ * @param {object|string} input
+ * @returns {object} Sanitized header map.
+ */
+function normalizeHeaders(input) {
+  const headers = {};
+
+  const setHeader = (name, value) => {
+    if (name == null) return;
+    const cleanName = String(name).replace(/[\r\n]/g, '').trim();
+    const cleanValue = String(value == null ? '' : value).replace(/[\r\n]/g, '').trim();
+    if (cleanName && cleanValue) {
+      headers[cleanName] = cleanValue;
+    }
+  };
+
+  if (typeof input === 'string') {
+    input.split(/\r?\n/).forEach(line => {
+      let entry = line.trim();
+      if (!entry) return;
+      entry = entry.replace(/^-H\s+/i, '').replace(/^["']|["']$/g, '').trim();
+      const sep = entry.indexOf(':');
+      if (sep === -1) return;
+      setHeader(entry.slice(0, sep), entry.slice(sep + 1));
+    });
+  } else if (input && typeof input === 'object' && !Array.isArray(input)) {
+    Object.keys(input).forEach(name => setHeader(name, input[name]));
+  }
+
+  return headers;
+}
+
 function saveDomain(domain) {
   const domains = readDomains();
   const index = domains.findIndex(d => d.id === domain.id);
@@ -179,6 +215,7 @@ function saveDomain(domain) {
   // Clean key or auto-generate a secure random string
   domain.key = domain.key && domain.key.trim() ? domain.key.trim() : `key_${Math.random().toString(36).substr(2, 9)}${Math.random().toString(36).substr(2, 6)}`;
   domain.phoneFilter = typeof domain.phoneFilter === 'string' ? domain.phoneFilter.trim() : '';
+  domain.headers = normalizeHeaders(domain.headers);
 
   if (index !== -1) {
     domains[index] = { ...domains[index], ...domain, updatedAt: new Date().toISOString() };
@@ -209,5 +246,6 @@ module.exports = {
   deleteMessage,
   readDomains,
   saveDomain,
-  deleteDomain
+  deleteDomain,
+  normalizeHeaders
 };

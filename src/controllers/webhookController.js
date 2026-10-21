@@ -130,8 +130,14 @@ async function forwardWebhook(msgRecord) {
         targetPayload.tempMediaUrl = `${msgRecord.tempMediaUrl}${separator}key=${encodeURIComponent(key)}`;
       }
 
-      logger.info(`Forwarding message ${msgRecord.id} to target: ${target.url} (${target.notes || 'No notes'})`);
-      await axios.post(target.url, targetPayload, { timeout: 5000 });
+      // Custom headers configured per target (e.g. x-api-key, Authorization: Bearer ...)
+      const requestHeaders = (target.headers && typeof target.headers === 'object')
+        ? { ...target.headers }
+        : {};
+      const headerNames = Object.keys(requestHeaders);
+
+      logger.info(`Forwarding message ${msgRecord.id} to target: ${target.url} (${target.notes || 'No notes'})${headerNames.length ? ` with headers: ${headerNames.join(', ')}` : ''}`);
+      await axios.post(target.url, targetPayload, { timeout: 5000, headers: requestHeaders });
       logger.info(`Successfully forwarded message ${msgRecord.id} to ${target.url}`);
     } catch (err) {
       logger.error(`Failed to forward message ${msgRecord.id} to ${target.url}:`, err.message);
